@@ -34,7 +34,7 @@ The code is released under an MIT license
 This package has been developed from different publications. Please consider citing the papers
 that are relevant to the work you are doing if you are utilizing this code.
 
-### [Original Paper]((https://doi.org/10.5636/jgg.49.947)
+### [Original Paper](https://doi.org/10.5636/jgg.49.947)
 ```
 Amm, O. "Ionospheric Elementary Current Systems in Spherical Coordinates and Their Application."
 Journal of geomagnestism and geoelectricity 49.7 (1997): 947-955. doi:10.5636/jgg.49.947
