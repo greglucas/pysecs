@@ -50,7 +50,8 @@ class SECS:
 
         # Storage of the scaling factors
         self.sec_amps = None
-        self_sec_amps_var = None
+        # TODO: Implement variance to the current amps.
+        # self.sec_amps_var = None
 
     @property
     def has_df(self):
@@ -348,7 +349,7 @@ def J_df(obs_loc, sec_loc):
     tan_theta2 = np.tan(theta/2.)
 
     J_phi = 1./(4*np.pi*sec_r)
-    J_phi = np.divide(J_phi, tan_theta2, out=np.ones_like(tan_theta2), where=tan_theta2!=0)
+    J_phi = np.divide(J_phi, tan_theta2, out=np.ones_like(tan_theta2)*np.inf, where=tan_theta2!=0)
 
     # Only valid on the SEC shell
     J_phi[sec_r != obs_r] = 0.
@@ -391,7 +392,7 @@ def J_cf(obs_loc, sec_loc):
     tan_theta2 = np.tan(theta/2.)
 
     J_theta = 1./(4*np.pi*sec_r)
-    J_theta = np.divide(J_theta, tan_theta2, out=np.ones_like(tan_theta2), where=tan_theta2!=0)
+    J_theta = np.divide(J_theta, tan_theta2, out=np.ones_like(tan_theta2)*np.inf, where=tan_theta2!=0)
     # Uniformly directed FACs around the globe, except the pole
     # Integrated over the globe, this will lead to zero
     J_r = -np.ones(J_theta.shape)/(4*np.pi*sec_r**2)
@@ -407,7 +408,7 @@ def J_cf(obs_loc, sec_loc):
 
     J[:,0,:] = -J_theta*np.sin(alpha)
     J[:,1,:] = -J_theta*np.cos(alpha)
-    J[:,2,:] = J_r
+    J[:,2,:] = -J_r
 
     return J
 
