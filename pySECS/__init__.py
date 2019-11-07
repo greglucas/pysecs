@@ -5,7 +5,7 @@ missing_dependencies = []
 for dependency in hard_dependencies:
     try:
         __import__(dependency)
-    except ImportError as e:
+    except ImportError:
         missing_dependencies.append(dependency)
 
 if missing_dependencies:
@@ -14,3 +14,4 @@ if missing_dependencies:
 del hard_dependencies, dependency, missing_dependencies
 
 from .secs import *
+__all__ = ["SECS"]
