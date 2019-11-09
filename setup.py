@@ -85,14 +85,14 @@ setup(
     url=URL,
     packages=find_packages(exclude=('tests',)),
     # If your package is a single module, use this instead of 'packages':
-    #py_modules=['pySECS'],
+    # py_modules=['pySECS'],
 
     # entry_points={
     #     'console_scripts': ['mycli=mymodule:cli'],
     # },
     install_requires=REQUIRED,
     include_package_data=True,
-    license='ISC',
+    license='MIT',
     classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
@@ -100,6 +100,8 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy'
     ],

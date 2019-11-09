@@ -1,6 +1,5 @@
-__all__ = ["SECS"]
-
 import numpy as np
+
 
 class SECS:
     """Spherical elementary current system (SECS).
@@ -38,20 +37,19 @@ class SECS:
                 raise ValueError("SEC DF locations must have 3 columns (lat, lon, r)")
             if self.sec_df_loc.ndim == 1:
                 # Add an empty dimension if only one SEC location is passed in
-                self.sec_df_loc = self.sec_df_loc[np.newaxis,...]
+                self.sec_df_loc = self.sec_df_loc[np.newaxis, ...]
 
         if self.sec_cf_loc is not None:
             self.sec_cf_loc = np.asarray(sec_cf_loc)
             if self.sec_cf_loc.shape[-1] != 3:
-                raise ValueError("SEC locations must have 3 columns (lat, lon, r)")
+                raise ValueError("SEC CF locations must have 3 columns (lat, lon, r)")
             if self.sec_cf_loc.ndim == 1:
                 # Add an empty dimension if only one SEC location is passed in
-                self.sec_cf_loc = self.sec_cf_loc[np.newaxis,...]
+                self.sec_cf_loc = self.sec_cf_loc[np.newaxis, ...]
 
         # Storage of the scaling factors
         self.sec_amps = None
-        # TODO: Implement variance to the current amps.
-        # self.sec_amps_var = None
+        self.sec_amps_var = None
 
     @property
     def has_df(self):
@@ -100,7 +98,7 @@ class SECS:
 
         if obs_B.ndim == 2:
             # Just a single snapshot given, so expand the dimensionality
-            obs_B = obs_B[np.newaxis,...]
+            obs_B = obs_B[np.newaxis, ...]
 
         ntimes = len(obs_B)
 
@@ -112,8 +110,7 @@ class SECS:
         # T has shape: (nobs, 3, nsec),
         # flatten the directions and reshape it to (nobs*3, nsec)
         U, S, Vh = np.linalg.svd(T_obs.reshape(-1, self.nsec) /
-                                                 obs_var.ravel()[:,np.newaxis],
-                                                 full_matrices=False)
+                                 obs_var.ravel()[:, np.newaxis], full_matrices=False)
 
         # Divide by infinity (1/S) gives zero weights
         W = 1./S
@@ -125,7 +122,7 @@ class SECS:
 
         # Store the fit 'sec_amps' in the object
         # shape: ntimes x nsec
-        self.sec_amps = np.dot(VWU, (obs_B/obs_var).reshape(ntimes,-1).T).T
+        self.sec_amps = np.dot(VWU, (obs_B/obs_var).reshape(ntimes, -1).T).T
         # Maybe want the variance of the predictions sometime later...?
         # shape: nsec
         self.sec_amps_var = np.sum((Vh.T * W)**2, axis=1)
@@ -172,7 +169,6 @@ class SECS:
 
         return np.squeeze(np.tensordot(self.sec_amps, T_pred, (1, 2)))
 
-
     def predict_B(self, pred_loc):
         """Returns an array of magnetic field predictions.
 
@@ -181,7 +177,6 @@ class SECS:
 
         """
         return self.predict(pred_loc)
-
 
     def predict_J(self, pred_loc):
         """Returns an array of current predictions.
@@ -240,11 +235,11 @@ def T_df(obs_loc, sec_loc):
     nobs = len(obs_loc)
     nsec = len(sec_loc)
 
-    obs_r = obs_loc[:,2][:,np.newaxis]
-    sec_r = sec_loc[:,2][np.newaxis,:]
+    obs_r = obs_loc[:, 2][:, np.newaxis]
+    sec_r = sec_loc[:, 2][np.newaxis, :]
 
-    theta = calc_angular_distance(obs_loc[:,:2], sec_loc[:,:2])
-    alpha = calc_bearing(obs_loc[:,:2], sec_loc[:,:2])
+    theta = calc_angular_distance(obs_loc[:, :2], sec_loc[:, :2])
+    alpha = calc_bearing(obs_loc[:, :2], sec_loc[:, :2])
 
     # magnetic permeability
     mu0 = 4*np.pi*1e-7
@@ -264,7 +259,7 @@ def T_df(obs_loc, sec_loc):
     Btheta = -mu0/(4*np.pi*obs_r) * (factor*(x - cos_theta) + cos_theta)
     # If sin(theta) == 0: Btheta = 0
     # There is a possible 0/0 in the expansion when sec_loc == obs_loc
-    Btheta = np.divide(Btheta, sin_theta, out=np.zeros_like(sin_theta), where=sin_theta!=0)
+    Btheta = np.divide(Btheta, sin_theta, out=np.zeros_like(sin_theta), where=sin_theta != 0)
 
     # When observation points radii are outside of the sec locations
     under_locs = sec_r < obs_r
@@ -281,9 +276,9 @@ def T_df(obs_loc, sec_loc):
         Br2 = mu0*x/(4*np.pi*obs_r) * (1./np.sqrt(1 - 2*x*cos_theta + x**2) - 1)
 
         # Amm & Viljanen: Equation A.8
-        Btheta2 = mu0/(4*np.pi*obs_r) * ((obs_r-sec_r*cos_theta)/
-                                          np.sqrt(obs_r**2 - 2*obs_r*sec_r*cos_theta + sec_r**2) - 1)
-        Btheta2 = np.divide(Btheta2, sin_theta, out=np.zeros_like(sin_theta), where=sin_theta!=0)
+        Btheta2 = mu0/(4*np.pi*obs_r)*((obs_r-sec_r*cos_theta) /
+                                       np.sqrt(obs_r**2 - 2*obs_r*sec_r*cos_theta + sec_r**2) - 1)
+        Btheta2 = np.divide(Btheta2, sin_theta, out=np.zeros_like(sin_theta), where=sin_theta != 0)
 
         # Update only the locations where secs are under observations
         Btheta[under_locs] = Btheta2[under_locs]
@@ -292,11 +287,12 @@ def T_df(obs_loc, sec_loc):
     # Transform back to Bx, By, Bz at each local point
     T = np.empty((nobs, 3, nsec))
     # alpha == angle (from cartesian x-axis (By), going towards y-axis (Bx))
-    T[:,0,:] = -Btheta*np.sin(alpha)
-    T[:,1,:] = -Btheta*np.cos(alpha)
-    T[:,2,:] = -Br
+    T[:, 0, :] = -Btheta*np.sin(alpha)
+    T[:, 1, :] = -Btheta*np.cos(alpha)
+    T[:, 2, :] = -Br
 
     return T
+
 
 def T_cf(obs_loc, sec_loc):
     """Calculates the transfer function from SEC location to observation location.
@@ -336,32 +332,31 @@ def J_df(obs_loc, sec_loc):
     nobs = len(obs_loc)
     nsec = len(sec_loc)
 
-    obs_r = obs_loc[:,2][:,np.newaxis]
-    sec_r = sec_loc[:,2][np.newaxis,:]
+    obs_r = obs_loc[:, 2][:, np.newaxis]
+    sec_r = sec_loc[:, 2][np.newaxis, :]
 
-    obs_loc = np.deg2rad(obs_loc[:,:2])
-    sec_loc = np.deg2rad(sec_loc[:,:2])
-
-    theta = calc_angular_distance(obs_loc[:,:2], sec_loc[:,:2])
-    alpha = calc_bearing(obs_loc[:,:2], sec_loc[:,:2])
+    # Input to the distance calculations is degrees, output is in radians
+    theta = calc_angular_distance(obs_loc[:, :2], sec_loc[:, :2])
+    alpha = calc_bearing(obs_loc[:, :2], sec_loc[:, :2])
 
     # Amm & Viljanen: Equation 6
     tan_theta2 = np.tan(theta/2.)
 
     J_phi = 1./(4*np.pi*sec_r)
-    J_phi = np.divide(J_phi, tan_theta2, out=np.ones_like(tan_theta2)*np.inf, where=tan_theta2!=0)
-
+    J_phi = np.divide(J_phi, tan_theta2, out=np.ones_like(tan_theta2)*np.inf,
+                      where=tan_theta2 != 0.)
     # Only valid on the SEC shell
     J_phi[sec_r != obs_r] = 0.
 
     # Transform back to Bx, By, Bz at each local point
     J = np.empty((nobs, 3, nsec))
     # alpha == angle (from cartesian x-axis (By), going towards y-axis (Bx))
-    J[:,0,:] = -J_phi*np.cos(alpha)
-    J[:,1,:] = J_phi*np.sin(alpha)
-    J[:,2,:] = 0.
+    J[:, 0, :] = -J_phi*np.cos(alpha)
+    J[:, 1, :] = J_phi*np.sin(alpha)
+    J[:, 2, :] = 0.
 
     return J
+
 
 def J_cf(obs_loc, sec_loc):
     """Calculates the transfer function from SEC location to observation location.
@@ -382,17 +377,18 @@ def J_cf(obs_loc, sec_loc):
     nobs = len(obs_loc)
     nsec = len(sec_loc)
 
-    obs_r = obs_loc[:,2][:,np.newaxis]
-    sec_r = sec_loc[:,2][np.newaxis,:]
+    obs_r = obs_loc[:, 2][:, np.newaxis]
+    sec_r = sec_loc[:, 2][np.newaxis, :]
 
-    theta = calc_angular_distance(obs_loc[:,:2], sec_loc[:,:2])
-    alpha = calc_bearing(obs_loc[:,:2], sec_loc[:,:2])
+    theta = calc_angular_distance(obs_loc[:, :2], sec_loc[:, :2])
+    alpha = calc_bearing(obs_loc[:, :2], sec_loc[:, :2])
 
     # Amm & Viljanen: Equation 7
     tan_theta2 = np.tan(theta/2.)
 
     J_theta = 1./(4*np.pi*sec_r)
-    J_theta = np.divide(J_theta, tan_theta2, out=np.ones_like(tan_theta2)*np.inf, where=tan_theta2!=0)
+    J_theta = np.divide(J_theta, tan_theta2, out=np.ones_like(tan_theta2)*np.inf,
+                        where=tan_theta2 != 0)
     # Uniformly directed FACs around the globe, except the pole
     # Integrated over the globe, this will lead to zero
     J_r = -np.ones(J_theta.shape)/(4*np.pi*sec_r**2)
@@ -406,17 +402,18 @@ def J_cf(obs_loc, sec_loc):
     J = np.empty((nobs, 3, nsec))
     # alpha == angle (from cartesian x-axis (By), going towards y-axis (Bx))
 
-    J[:,0,:] = -J_theta*np.sin(alpha)
-    J[:,1,:] = -J_theta*np.cos(alpha)
-    J[:,2,:] = -J_r
+    J[:, 0, :] = -J_theta*np.sin(alpha)
+    J[:, 1, :] = -J_theta*np.cos(alpha)
+    J[:, 2, :] = -J_r
 
     return J
 
+
 def calc_angular_distance(latlon1, latlon2):
-    lat1 = np.deg2rad(latlon1[:,0])[:,np.newaxis]
-    lon1 = np.deg2rad(latlon1[:,1])[:,np.newaxis]
-    lat2 = np.deg2rad(latlon2[:,0])[np.newaxis,:]
-    lon2 = np.deg2rad(latlon2[:,1])[np.newaxis,:]
+    lat1 = np.deg2rad(latlon1[:, 0])[:, np.newaxis]
+    lon1 = np.deg2rad(latlon1[:, 1])[:, np.newaxis]
+    lat2 = np.deg2rad(latlon2[:, 0])[np.newaxis, :]
+    lon2 = np.deg2rad(latlon2[:, 1])[np.newaxis, :]
 
     dlon = lon2 - lon1
 
@@ -425,11 +422,12 @@ def calc_angular_distance(latlon1, latlon2):
                       np.cos(lat1)*np.cos(lat2)*np.cos(dlon))
     return theta
 
+
 def calc_bearing(latlon1, latlon2):
-    lat1 = np.deg2rad(latlon1[:,0])[:,np.newaxis]
-    lon1 = np.deg2rad(latlon1[:,1])[:,np.newaxis]
-    lat2 = np.deg2rad(latlon2[:,0])[np.newaxis,:]
-    lon2 = np.deg2rad(latlon2[:,1])[np.newaxis,:]
+    lat1 = np.deg2rad(latlon1[:, 0])[:, np.newaxis]
+    lon1 = np.deg2rad(latlon1[:, 1])[:, np.newaxis]
+    lat2 = np.deg2rad(latlon2[:, 0])[np.newaxis, :]
+    lon2 = np.deg2rad(latlon2[:, 1])[np.newaxis, :]
 
     dlon = lon2 - lon1
 
