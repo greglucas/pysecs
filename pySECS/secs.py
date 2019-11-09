@@ -42,7 +42,7 @@ class SECS:
         if self.sec_cf_loc is not None:
             self.sec_cf_loc = np.asarray(sec_cf_loc)
             if self.sec_cf_loc.shape[-1] != 3:
-                raise ValueError("SEC locations must have 3 columns (lat, lon, r)")
+                raise ValueError("SEC CF locations must have 3 columns (lat, lon, r)")
             if self.sec_cf_loc.ndim == 1:
                 # Add an empty dimension if only one SEC location is passed in
                 self.sec_cf_loc = self.sec_cf_loc[np.newaxis, ...]
@@ -336,9 +336,7 @@ def J_df(obs_loc, sec_loc):
     obs_r = obs_loc[:, 2][:, np.newaxis]
     sec_r = sec_loc[:, 2][np.newaxis, :]
 
-    obs_loc = np.deg2rad(obs_loc[:, :2])
-    sec_loc = np.deg2rad(sec_loc[:, :2])
-
+    # Input to the distance calculations is degrees, output is in radians
     theta = calc_angular_distance(obs_loc[:, :2], sec_loc[:, :2])
     alpha = calc_bearing(obs_loc[:, :2], sec_loc[:, :2])
 
@@ -347,8 +345,7 @@ def J_df(obs_loc, sec_loc):
 
     J_phi = 1./(4*np.pi*sec_r)
     J_phi = np.divide(J_phi, tan_theta2, out=np.ones_like(tan_theta2)*np.inf,
-                      where=tan_theta2 != 0)
-
+                      where=tan_theta2 != 0.)
     # Only valid on the SEC shell
     J_phi[sec_r != obs_r] = 0.
 
