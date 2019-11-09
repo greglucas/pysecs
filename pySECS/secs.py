@@ -49,8 +49,7 @@ class SECS:
 
         # Storage of the scaling factors
         self.sec_amps = None
-        # TODO: Implement variance to the current amps.
-        # self.sec_amps_var = None
+        self.sec_amps_var = None
 
     @property
     def has_df(self):
