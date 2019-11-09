@@ -25,6 +25,13 @@ Example notebooks can be found in [notebooks/](./notebooks/)
     > python setup.py install
     ```
 
+3. Testing
+The package has a test suite that can be run with pytest
+
+    ```python
+    > pytest
+    ```
+
 ## License
 
 The code is released under an MIT license
