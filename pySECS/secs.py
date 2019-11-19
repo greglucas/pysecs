@@ -277,7 +277,7 @@ def T_df(obs_loc, sec_loc):
 
         # Amm & Viljanen: Equation A.8
         Btheta2 = - mu0/(4*np.pi*obs_r)*((obs_r-sec_r*cos_theta) /
-                                       np.sqrt(obs_r**2 - 2*obs_r*sec_r*cos_theta + sec_r**2) - 1)
+                                         np.sqrt(obs_r**2 - 2*obs_r*sec_r*cos_theta + sec_r**2) - 1)
         Btheta2 = np.divide(Btheta2, sin_theta, out=np.zeros_like(sin_theta), where=sin_theta != 0)
 
         # Update only the locations where secs are under observations
