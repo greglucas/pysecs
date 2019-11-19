@@ -259,7 +259,8 @@ def T_df(obs_loc, sec_loc):
     Btheta = -mu0/(4*np.pi*obs_r) * (factor*(x - cos_theta) + cos_theta)
     # If sin(theta) == 0: Btheta = 0
     # There is a possible 0/0 in the expansion when sec_loc == obs_loc
-    Btheta = np.divide(Btheta, sin_theta, out=np.zeros_like(sin_theta), where=sin_theta != 0)
+    Btheta = np.divide(Btheta, sin_theta, out=np.zeros_like(sin_theta),
+                       where=sin_theta != 0)
 
     # When observation points radii are outside of the sec locations
     under_locs = sec_r < obs_r
@@ -276,9 +277,12 @@ def T_df(obs_loc, sec_loc):
         Br2 = mu0*x/(4*np.pi*obs_r) * (1./np.sqrt(1 - 2*x*cos_theta + x**2) - 1)
 
         # Amm & Viljanen: Equation A.8
-        Btheta2 = - mu0/(4*np.pi*obs_r)*((obs_r-sec_r*cos_theta) /
-                                         np.sqrt(obs_r**2 - 2*obs_r*sec_r*cos_theta + sec_r**2) - 1)
-        Btheta2 = np.divide(Btheta2, sin_theta, out=np.zeros_like(sin_theta), where=sin_theta != 0)
+        Btheta2 = - mu0 / (4*np.pi*obs_r) * ((obs_r-sec_r*cos_theta) /
+                                             np.sqrt(obs_r**2 -
+                                                     2*obs_r*sec_r*cos_theta +
+                                                     sec_r**2) - 1)
+        Btheta2 = np.divide(Btheta2, sin_theta, out=np.zeros_like(sin_theta),
+                            where=sin_theta != 0)
 
         # Update only the locations where secs are under observations
         Btheta[under_locs] = Btheta2[under_locs]
