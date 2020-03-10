@@ -12,9 +12,9 @@ from shutil import rmtree
 from setuptools import find_packages, setup, Command
 
 # Package meta-data.
-NAME = 'pySECS'
+NAME = 'pysecs'
 DESCRIPTION = 'Spherical Elementary Current System Calculations'
-URL = 'https://github.com/greglucas/pySECS'
+URL = 'https://github.com/greglucas/pysecs'
 EMAIL = 'greg.m.lucas@gmail.com'
 AUTHOR = 'Greg Lucas'
 
@@ -85,7 +85,7 @@ setup(
     url=URL,
     packages=find_packages(exclude=('tests',)),
     # If your package is a single module, use this instead of 'packages':
-    # py_modules=['pySECS'],
+    # py_modules=['pysecs'],
 
     # entry_points={
     #     'console_scripts': ['mycli=mymodule:cli'],
@@ -101,9 +101,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Programming Language :: Python :: Implementation :: PyPy'
+        'Programming Language :: Python :: 3.8'
     ],
     # $ setup.py publish support.
     cmdclass={
