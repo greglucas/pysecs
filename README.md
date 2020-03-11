@@ -59,4 +59,4 @@ Earth, Planets and Space 51.6 (1999): 431-440. doi:10.1186/BF03352247
 
 ## Problems or Questions
 
-- [Report an issue using the GitHub issue tracker](http://github.com/greglucas/pySECS/issues)
+- [Report an issue using the GitHub issue tracker](http://github.com/greglucas/pysecs/issues)

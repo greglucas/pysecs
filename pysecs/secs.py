@@ -2,25 +2,25 @@ import numpy as np
 
 
 class SECS:
-    """Spherical elementary current system (SECS).
+    """Spherical Elementary Current System (SECS).
 
-    Algorithm implemented directly in spherical coordinates
-    from the equations of the 1999 Amm & Viljanen paper.
-
-    Amm, O., and A. Viljanen. "Ionospheric disturbance magnetic field continuation
-    from the ground to the ionosphere using spherical elementary current systems."
-    Earth, Planets and Space 51.6 (1999): 431-440. doi:10.1186/BF03352247
+    The algorithm is implemented directly in spherical coordinates
+    from the equations of the 1999 Amm & Viljanen paper [1]_.
 
     Parameters
     ----------
 
-    sec_df_loc : array (nsec x 3 [lat, lon, r])
-        Contains latitude, longiutde, and radius of the divergence free (df) SEC locations
+    sec_df_loc : ndarray (nsec x 3 [lat, lon, r])
+        The latitude, longiutde, and radius of the divergence free (df) SEC locations.
 
-    sec_cf_loc : array (nsec x 3 [lat, lon, r])
-        Contains latitude, longiutde, and radius of the curl free (cf) SEC locations
+    sec_cf_loc : ndarray (nsec x 3 [lat, lon, r])
+        The latitude, longiutde, and radius of the curl free (cf) SEC locations.
 
-
+    References
+    ----------
+    .. [1] Amm, O., and A. Viljanen. "Ionospheric disturbance magnetic field continuation
+           from the ground to the ionosphere using spherical elementary current systems."
+           Earth, Planets and Space 51.6 (1999): 431-440. doi:10.1186/BF03352247
     """
 
     def __init__(self, sec_df_loc=None, sec_cf_loc=None):
@@ -53,14 +53,17 @@ class SECS:
 
     @property
     def has_df(self):
+        """Whether this system has any divergence free currents."""
         return self.sec_df_loc is not None
 
     @property
     def has_cf(self):
+        """Whether this system has any curl free currents."""
         return self.sec_cf_loc is not None
 
     @property
     def nsec(self):
+        """The number of elementary currents in this system."""
         nsec = 0
         if self.has_df:
             nsec += len(self.sec_df_loc)
@@ -71,14 +74,21 @@ class SECS:
     def fit(self, obs_loc, obs_B, obs_var=None, epsilon=0.05):
         """Fits the SECS to the given observations.
 
-        obs_locs : array (nobs x 3 [lat, lon, r])
+        Given a number of observation locations and measurements,
+        this function fits the SEC system to them. It uses singular
+        value decomposition (SVD) to fit the SEC amplitudes with the
+        `epsilon` parameter used to regularize the solution.
+
+        Parameters
+        ----------
+        obs_locs : ndarray (nobs x 3 [lat, lon, r])
             Contains latitude, longitude, and radius of the observation locations
             (place where the measurements are made)
 
-        obs_B: array (ntimes x nobs x 3 [Bx, By, Bz])
+        obs_B: ndarray (ntimes x nobs x 3 [Bx, By, Bz])
             An array containing the measured/observed B-fields.
 
-        obs_var : array (nobs x 3 [varX, varY, varZ])
+        obs_var : ndarray (nobs x 3 [varX, varY, varZ]), optional
             Variances in the components at each observation location. Can be used to
             weight different observation locations more/less heavily. Infinite variance
             effectively eliminates the observation from the fit.
@@ -136,14 +146,26 @@ class SECS:
         return self
 
     def predict(self, pred_loc, J=False):
-        """Returns an array of predictions, given unit SEC currents.
+        """Calculate the predicted magnetic field or currents.
 
-        pred_loc: array (npred x 3 [lat, lon, r])
+        After a set of observations has been fit to this system we can
+        predict the magnetic fields or currents at any other location. This
+        function uses those fit amplitudes to predict at the requested locations.
+
+        Parameters
+        ----------
+        pred_loc: ndarray (npred x 3 [lat, lon, r])
             An array containing the locations where the predictions are desired.
 
-        J: boolean (default: False)
+        J: boolean
             Whether to predict currents (J=True) or magnetic fields (J=False)
+            Default: False (magnetic field prediction)
 
+        Returns
+        -------
+        ndarray (ntimes x npred x 3 [lat, lon, r])
+            The predicted values calculated from the current amplitudes that were
+            fit to this system.
         """
         if pred_loc.shape[-1] != 3:
             raise ValueError("Prediction locations must have 3 columns (lat, lon, r)")
@@ -170,24 +192,52 @@ class SECS:
         return np.squeeze(np.tensordot(self.sec_amps, T_pred, (1, 2)))
 
     def predict_B(self, pred_loc):
-        """Returns an array of magnetic field predictions.
+        """Calculate the predicted magnetic fields.
 
-        pred_loc: array (npred x 3 [lat, lon, r])
+        After a set of observations has been fit to this system we can
+        predict the magnetic fields or currents at any other location. This
+        function uses those fit amplitudes to predict at the requested locations.
+
+        Parameters
+        ----------
+        pred_loc: ndarray (npred x 3 [lat, lon, r])
             An array containing the locations where the predictions are desired.
 
+        Returns
+        -------
+        ndarray (ntimes x npred x 3 [lat, lon, r])
+            The predicted values calculated from the current amplitudes that were
+            fit to this system.
         """
         return self.predict(pred_loc)
 
     def predict_J(self, pred_loc):
-        """Returns an array of current predictions.
+        """Calculate the predicted currents.
 
-        pred_loc: array (npred x 3 [lat, lon, r])
+        After a set of observations has been fit to this system we can
+        predict the magnetic fields or currents at any other location. This
+        function uses those fit amplitudes to predict at the requested locations.
+
+        Parameters
+        ----------
+        pred_loc: ndarray (npred x 3 [lat, lon, r])
             An array containing the locations where the predictions are desired.
 
+        Returns
+        -------
+        ndarray (ntimes x npred x 3 [lat, lon, r])
+            The predicted values calculated from the current amplitudes that were
+            fit to this system.
         """
         return self.predict(pred_loc, J=True)
 
     def _calc_T(self, obs_loc):
+        """Calculates the T transfer matrix.
+
+        The magnetic field transfer matrix to go from SEC locations to observation
+        locations. It assumes unit current amplitudes that will then be
+        scaled with the proper amplitudes later.
+        """
         if self.has_df:
             T = T_df(obs_loc=obs_loc, sec_loc=self.sec_df_loc)
 
@@ -202,6 +252,12 @@ class SECS:
         return T
 
     def _calc_J(self, obs_loc):
+        """Calculates the J transfer matrix.
+
+        The current transfer matrix to go from SEC locations to observation
+        locations. It assumes unit current amplitudes that will then be
+        scaled with the proper amplitudes later.
+        """
         if self.has_df:
             J = J_df(obs_loc=obs_loc, sec_loc=self.sec_df_loc)
 
@@ -217,20 +273,23 @@ class SECS:
 
 
 def T_df(obs_loc, sec_loc):
-    """Calculates the transfer function from SEC location to observation location.
+    """Calculates the divergence free magnetic field transfer function.
 
-    The transfer function assumes unit current SECs at the given locations.
+    The transfer function goes from SEC location to observation location
+    and assumes unit current SECs at the given locations.
 
-    Parameters:
-    -----------
-    obs_loc : array (nobs, 3 [lat, lon, r])
+    Parameters
+    ----------
+    obs_loc : ndarray (nobs, 3 [lat, lon, r])
+        The locations of the observation points.
 
-    sec_loc : array (nsec, 3 [lat, lon, r])
+    sec_loc : ndarray (nsec, 3 [lat, lon, r])
+        The locations of the SEC points.
 
-    Returns:
-    --------
-    T : array (nobs, 3, nsec)
-
+    Returns
+    -------
+    ndarray (nobs, 3, nsec)
+        The T transfer matrix.
     """
     nobs = len(obs_loc)
     nsec = len(sec_loc)
@@ -299,39 +358,45 @@ def T_df(obs_loc, sec_loc):
 
 
 def T_cf(obs_loc, sec_loc):
-    """Calculates the transfer function from SEC location to observation location.
+    """Calculates the curl free magnetic field transfer function.
 
-    The transfer function assumes unit current SECs at the given locations.
+    The transfer function goes from SEC location to observation location
+    and assumes unit current SECs at the given locations.
 
-    Parameters:
-    -----------
-    obs_loc : array (nobs, 3 [lat, lon, r])
+    Parameters
+    ----------
+    obs_loc : ndarray (nobs, 3 [lat, lon, r])
+        The locations of the observation points.
 
-    sec_loc : array (nsec, 3 [lat, lon, r])
+    sec_loc : ndarray (nsec, 3 [lat, lon, r])
+        The locations of the SEC points.
 
-    Returns:
-    --------
-    T : array (nobs, 3, nsec)
-
+    Returns
+    -------
+    ndarray (nobs, 3, nsec)
+        The T transfer matrix.
     """
     raise NotImplementedError("Curl Free Magnetic Field Transfers are not implemented yet.")
 
 
 def J_df(obs_loc, sec_loc):
-    """Calculates the transfer function from SEC location to observation location.
+    """Calculates the divergence free current density transfer function.
 
-    The transfer function assumes unit current SECs at the given locations.
+    The transfer function goes from SEC location to observation location
+    and assumes unit current SECs at the given locations.
 
-    Parameters:
-    -----------
-    obs_loc : array (nobs, 3 [lat, lon, r])
+    Parameters
+    ----------
+    obs_loc : ndarray (nobs, 3 [lat, lon, r])
+        The locations of the observation points.
 
-    sec_loc : array (nsec, 3 [lat, lon, r])
+    sec_loc : ndarray (nsec, 3 [lat, lon, r])
+        The locations of the SEC points.
 
-    Returns:
-    --------
-    J : array (nobs, 3, nsec)
-
+    Returns
+    -------
+    ndarray (nobs, 3, nsec)
+        The J transfer matrix.
     """
     nobs = len(obs_loc)
     nsec = len(sec_loc)
@@ -363,20 +428,23 @@ def J_df(obs_loc, sec_loc):
 
 
 def J_cf(obs_loc, sec_loc):
-    """Calculates the transfer function from SEC location to observation location.
+    """Calculates the curl free magnetic field transfer function.
 
-    The transfer function assumes unit current SECs at the given locations.
+    The transfer function goes from SEC location to observation location
+    and assumes unit current SECs at the given locations.
 
-    Parameters:
-    -----------
-    obs_loc : array (nobs, 3 [lat, lon, r])
+    Parameters
+    ----------
+    obs_loc : ndarray (nobs, 3 [lat, lon, r])
+        The locations of the observation points.
 
-    sec_loc : array (nsec, 3 [lat, lon, r])
+    sec_loc : ndarray (nsec, 3 [lat, lon, r])
+        The locations of the SEC points.
 
-    Returns:
-    --------
-    J : array (nobs, 3, nsec)
-
+    Returns
+    -------
+    ndarray (nobs, 3, nsec)
+        The J transfer matrix.
     """
     nobs = len(obs_loc)
     nsec = len(sec_loc)
@@ -414,6 +482,24 @@ def J_cf(obs_loc, sec_loc):
 
 
 def calc_angular_distance(latlon1, latlon2):
+    """Calculate the angular distance between a set of points.
+
+    This function calculates the angular distance in radians
+    between any number of latitude and longitude points.
+
+    Parameters
+    ----------
+    latlon1 : ndarray (n x 2 [lat, lon])
+        An array of n (latitude, longitude) points.
+
+    latlon2 : ndarray (m x 2 [lat, lon])
+        An array of m (latitude, longitude) points.
+
+    Returns
+    -------
+    ndarray (n x m)
+        The array of distances between the input arrays.
+    """
     lat1 = np.deg2rad(latlon1[:, 0])[:, np.newaxis]
     lon1 = np.deg2rad(latlon1[:, 1])[:, np.newaxis]
     lat2 = np.deg2rad(latlon2[:, 0])[np.newaxis, :]
@@ -428,6 +514,26 @@ def calc_angular_distance(latlon1, latlon2):
 
 
 def calc_bearing(latlon1, latlon2):
+    """Calculate the bearing (direction) between a set of points.
+
+    This function calculates the bearing in radians
+    between any number of latitude and longitude points.
+    It is the direction from point 1 to point 2 going from the
+    cartesian x-axis towards the cartesian y-axis.
+
+    Parameters
+    ----------
+    latlon1 : ndarray (n x 2 [lat, lon])
+        An array of n (latitude, longitude) points.
+
+    latlon2 : ndarray (m x 2 [lat, lon])
+        An array of m (latitude, longitude) points.
+
+    Returns
+    -------
+    ndarray (n x m)
+        The array of bearings between the input arrays.
+    """
     lat1 = np.deg2rad(latlon1[:, 0])[:, np.newaxis]
     lon1 = np.deg2rad(latlon1[:, 1])[:, np.newaxis]
     lat2 = np.deg2rad(latlon2[:, 0])[np.newaxis, :]
