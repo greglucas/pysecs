@@ -1,6 +1,6 @@
-# pySECS
+# pysecs
 
-pySECS is an open source library for calculating Spherical Elementary Current Systems (SECS).
+pysecs is an open source library for calculating Spherical Elementary Current Systems (SECS).
 
 ## Features
 
@@ -16,7 +16,7 @@ Example notebooks can be found in [notebooks/](./notebooks/)
 1. Clone the git repository
 
     ```bash
-    > git clone https://github.com/greglucas/pySECS
+    > git clone https://github.com/greglucas/pysecs
     ```
 
 2. Build and install the package
@@ -59,4 +59,4 @@ Earth, Planets and Space 51.6 (1999): 431-440. doi:10.1186/BF03352247
 
 ## Problems or Questions
 
-- [Report an issue using the GitHub issue tracker](http://github.com/greglucas/pySECS/issues)
+- [Report an issue using the GitHub issue tracker](http://github.com/greglucas/pysecs/issues)

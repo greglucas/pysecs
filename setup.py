@@ -12,9 +12,9 @@ from shutil import rmtree
 from setuptools import find_packages, setup, Command
 
 # Package meta-data.
-NAME = 'pySECS'
+NAME = 'pysecs'
 DESCRIPTION = 'Spherical Elementary Current System Calculations'
-URL = 'https://github.com/greglucas/pySECS'
+URL = 'https://github.com/greglucas/pysecs'
 EMAIL = 'greg.m.lucas@gmail.com'
 AUTHOR = 'Greg Lucas'
 
@@ -34,11 +34,6 @@ here = os.path.abspath(os.path.dirname(__file__))
 # Note: this will only work if 'README.md' is present in your MANIFEST.in file!
 with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = '\n' + f.read()
-
-# Load the package's __version__.py module as a dictionary.
-about = {}
-with open(os.path.join(here, NAME, '__version__.py')) as f:
-    exec(f.read(), about)
 
 
 class PublishCommand(Command):
@@ -77,7 +72,7 @@ class PublishCommand(Command):
 # Where the magic happens:
 setup(
     name=NAME,
-    version=about['__version__'],
+    version='0.0.4',
     description=DESCRIPTION,
     long_description=long_description,
     author=AUTHOR,
@@ -85,7 +80,7 @@ setup(
     url=URL,
     packages=find_packages(exclude=('tests',)),
     # If your package is a single module, use this instead of 'packages':
-    # py_modules=['pySECS'],
+    # py_modules=['pysecs'],
 
     # entry_points={
     #     'console_scripts': ['mycli=mymodule:cli'],
@@ -101,9 +96,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Programming Language :: Python :: Implementation :: PyPy'
+        'Programming Language :: Python :: 3.8'
     ],
     # $ setup.py publish support.
     cmdclass={

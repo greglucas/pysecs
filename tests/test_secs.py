@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import assert_array_equal, assert_allclose
 import pytest
-import pySECS
+import pysecs
 
 R_EARTH = 6378e3
 
@@ -10,7 +10,7 @@ def test_angular_distance():
     "Test the angular distance formula."
     latlon1 = np.array([[0., 0.]])
     latlon2 = np.array([[0., 0.], [0., 90], [-90., 0.], [0., 180.]])
-    assert_array_equal(pySECS.calc_angular_distance(latlon1, latlon2),
+    assert_array_equal(pysecs.calc_angular_distance(latlon1, latlon2),
                        np.deg2rad([[0., 90., 90., 180.]]))
 
 
@@ -18,7 +18,7 @@ def test_bearing():
     "Test the cardinal directions."
     latlon1 = np.array([[0., 0.]])
     latlon2 = np.array([[0., 90.], [90., 0.], [90., 45.], [0., -90.], [-90, 0.]])
-    assert_array_equal(pySECS.calc_bearing(latlon1, latlon2),
+    assert_array_equal(pysecs.calc_bearing(latlon1, latlon2),
                        np.deg2rad([[0., 90., 90., 180., -90]]))
 
 
@@ -31,7 +31,7 @@ def test_divergence_free_magnetic_directions():
     obs_latlonr = np.array([[5., 0., R_EARTH], [0., 5., R_EARTH],
                             [-5, 0., R_EARTH], [0., -5., R_EARTH]])
 
-    B = np.squeeze(pySECS.T_df(obs_latlonr, sec_latlonr))
+    B = np.squeeze(pysecs.T_df(obs_latlonr, sec_latlonr))
 
     angles = np.arctan2(B[:, 0], B[:, 1])
     # southward, westward, northward, eastward
@@ -51,7 +51,7 @@ def test_divergence_free_magnetic_magnitudes_obs_under():
     obs_latlonr[:, 1] = angles
     obs_latlonr[:, 2] = obs_r
 
-    B = np.squeeze(pySECS.T_df(obs_latlonr, sec_latlonr))
+    B = np.squeeze(pysecs.T_df(obs_latlonr, sec_latlonr))
 
     # All x components should be zero (angles goes around the equator and all
     # quantities should be parallel to that)
@@ -90,7 +90,7 @@ def test_divergence_free_magnetic_magnitudes_obs_over():
     obs_latlonr[:, 1] = angles
     obs_latlonr[:, 2] = obs_r
 
-    B = np.squeeze(pySECS.T_df(obs_latlonr, sec_latlonr))
+    B = np.squeeze(pysecs.T_df(obs_latlonr, sec_latlonr))
 
     # All x components should be zero (angles goes around the equator and all
     # quantities should be parallel to that)
@@ -124,10 +124,10 @@ def test_outside_current_plane():
                             [5, 0., sec_r - 100.], [5., 0., sec_r + 100.]])
 
     # df currents
-    J = np.squeeze(pySECS.J_df(obs_latlonr, sec_latlonr))
+    J = np.squeeze(pysecs.J_df(obs_latlonr, sec_latlonr))
     assert np.all(J == 0.)
     # cf currents
-    J = np.squeeze(pySECS.J_cf(obs_latlonr, sec_latlonr))
+    J = np.squeeze(pysecs.J_cf(obs_latlonr, sec_latlonr))
     assert np.all(J == 0.)
 
 
@@ -140,7 +140,7 @@ def test_divergence_free_current_directions():
     obs_latlonr = np.array([[5., 0., sec_r], [0., 5., sec_r],
                             [-5, 0., sec_r], [0., -5., sec_r]])
 
-    J = np.squeeze(pySECS.J_df(obs_latlonr, sec_latlonr))
+    J = np.squeeze(pysecs.J_df(obs_latlonr, sec_latlonr))
 
     angles = np.arctan2(J[:, 0], J[:, 1])
     # westward, northward, eastward, southward
@@ -159,7 +159,7 @@ def test_divergence_free_current_magnitudes():
     obs_latlonr[:, 1] = angles
     obs_latlonr[:, 2] = sec_r
 
-    J = np.squeeze(pySECS.J_df(obs_latlonr, sec_latlonr))
+    J = np.squeeze(pysecs.J_df(obs_latlonr, sec_latlonr))
 
     # Make sure all radial components are zero in this system
     assert np.all(J[:, 2] == 0.)
@@ -186,7 +186,7 @@ def test_curl_free_current_directions():
     obs_latlonr = np.array([[5., 0., sec_r], [0., 5., sec_r],
                             [-5, 0., sec_r], [0., -5., sec_r]])
 
-    J = np.squeeze(pySECS.J_cf(obs_latlonr, sec_latlonr))
+    J = np.squeeze(pysecs.J_cf(obs_latlonr, sec_latlonr))
 
     angles = np.arctan2(J[:, 0], J[:, 1])
     # pointing out from the SEC direction to OBS direction.
@@ -206,7 +206,7 @@ def test_curl_free_current_magnitudes():
     obs_latlonr[:, 1] = angles
     obs_latlonr[:, 2] = sec_r
 
-    J = np.squeeze(pySECS.J_cf(obs_latlonr, sec_latlonr))
+    J = np.squeeze(pysecs.J_cf(obs_latlonr, sec_latlonr))
 
     # Make sure all radial components are oppositely directed
     radial_component = 1./(4*np.pi*sec_r**2)
@@ -229,15 +229,15 @@ def test_curl_free_current_magnitudes():
 def test_empty_object():
     "Testing empty secs object creation failure."
     with pytest.raises(ValueError):
-        pySECS.SECS()
+        pysecs.SECS()
 
 
 def test_list_numpy():
     "Make sure creation with numpy and list produce the same locations."
     x2d = [[1., 0., 0.], [1., 0., 0.]]
     x2d_np = np.array(x2d)
-    secs_list2 = pySECS.SECS(sec_df_loc=x2d, sec_cf_loc=x2d)
-    secs_np2 = pySECS.SECS(sec_df_loc=x2d_np, sec_cf_loc=x2d_np)
+    secs_list2 = pysecs.SECS(sec_df_loc=x2d, sec_cf_loc=x2d)
+    secs_np2 = pysecs.SECS(sec_df_loc=x2d_np, sec_cf_loc=x2d_np)
     assert secs_list2.nsec == 4  # 2 df + 2 cf
     assert secs_list2.nsec == secs_np2.nsec
     assert_array_equal(secs_list2.sec_df_loc, secs_np2.sec_df_loc)
