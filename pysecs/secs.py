@@ -183,7 +183,7 @@ class SECS:
             raise ValueError("Prediction locations must have 3 columns (lat, lon, r)")
 
         if self.sec_amps is None:
-            raise ValueError("There are currently no currents associated with the SECs," +
+            raise ValueError("There are no currents associated with the SECs," +
                              "you need to call .fit() first to fit to some observations.")
 
         # T_pred shape=(npred x 3 x nsec)
