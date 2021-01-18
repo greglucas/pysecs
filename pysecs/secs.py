@@ -88,7 +88,7 @@ class SECS:
         obs_B: ndarray (ntimes x nobs x 3 [Bx, By, Bz])
             An array containing the measured/observed B-fields.
 
-        obs_var : ndarray (nobs x 3 [varX, varY, varZ]), optional
+        obs_var : ndarray (ntimes x nobs x 3 [varX, varY, varZ]), optional
             Variances in the components at each observation location. Can be used to
             weight different observation locations more/less heavily. Infinite variance
             effectively eliminates the observation from the fit.
@@ -102,40 +102,52 @@ class SECS:
         if obs_loc.shape[-1] != 3:
             raise ValueError("Observation locations must have 3 columns (lat, lon, r)")
 
-        # Assume unit variance of all measurements
-        if obs_var is None:
-            obs_var = np.ones(obs_loc.shape)
-
         if obs_B.ndim == 2:
             # Just a single snapshot given, so expand the dimensionality
             obs_B = obs_B[np.newaxis, ...]
+
+        # Assume unit variance of all measurements
+        if obs_var is None:
+            obs_var = np.ones(obs_B.shape)
 
         ntimes = len(obs_B)
 
         # Calculate the transfer functions
         T_obs = self._calc_T(obs_loc)
 
+        # Store the fit sec_amps in the object
+        self.sec_amps = np.empty((ntimes, self.nsec))
+        self.sec_amps_var = np.empty((ntimes, self.nsec))
+
         # Calculate the singular value decomposition (SVD)
+        # T_obs has shape (nobs, 3, nsec), we need to reshape it
+        # and add an extra dimension for time, making it (1, nobs*3, nsec)
+        # obs_var has shape (ntimes, nobs, 3), reshape it and add an
+        # extra dimension for the secs, making it (ntimes, nobs*3, 1)
 
-        # T has shape: (nobs, 3, nsec),
-        # flatten the directions and reshape it to (nobs*3, nsec)
-        U, S, Vh = np.linalg.svd(T_obs.reshape(-1, self.nsec) /
-                                 obs_var.ravel()[:, np.newaxis], full_matrices=False)
+        # After all of the reshaping and division, the full svd_in matrix
+        # has shape (ntimes, nobs*3, nsec)
+        svd_in = (T_obs.reshape(-1, self.nsec)[np.newaxis, :] /
+                  obs_var.reshape((ntimes, -1))[..., np.newaxis])
+        for i in range(ntimes):
+            # Iterate through all times, only calculating the SVD when needed
+            # The first timestep, or anytime the variance changes
+            if i == 0 or not np.all(svd_in[i, ...] == svd_in[i-1, ...]):
+                U, S, Vh = np.linalg.svd(svd_in[i, ...], full_matrices=False)
 
-        # Divide by infinity (1/S) gives zero weights
-        W = 1./S
-        # Eliminate the small singular values (less than epsilon)
-        # by giving them zero weight
-        W[S < epsilon*S.max()] = 0.
+                # Divide by infinity (1/S) gives zero weights
+                W = 1./S
+                # Eliminate the small singular values (less than epsilon)
+                # by giving them zero weight
+                W[S < epsilon*S.max()] = 0.
 
-        VWU = np.dot(Vh.T, np.dot(np.diag(W), U.T))
+                VWU = Vh.T @ (np.diag(W) @ U.T)
 
-        # Store the fit 'sec_amps' in the object
-        # shape: ntimes x nsec
-        self.sec_amps = np.dot(VWU, (obs_B/obs_var).reshape(ntimes, -1).T).T
-        # Maybe want the variance of the predictions sometime later...?
-        # shape: nsec
-        self.sec_amps_var = np.sum((Vh.T * W)**2, axis=1)
+            # shape: ntimes x nsec
+            self.sec_amps[i, :] = (VWU @ (obs_B[i, ...]/obs_var[i, ...]).reshape(-1).T).T
+            # Maybe we want the variance of the predictions sometime later...?
+            # shape: ntimes x nsec
+            self.sec_amps_var[i, :] = np.sum((Vh.T * W)**2, axis=1)
 
         return self
 
