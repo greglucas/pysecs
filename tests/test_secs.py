@@ -242,3 +242,130 @@ def test_list_numpy():
     assert secs_list2.nsec == secs_np2.nsec
     assert_array_equal(secs_list2.sec_df_loc, secs_np2.sec_df_loc)
     assert_array_equal(secs_list2.sec_cf_loc, secs_np2.sec_cf_loc)
+
+
+def test_fit_unit_currents():
+    """Test the unit current function"""
+    # divergence free
+    secs = pysecs.SECS(sec_df_loc=[[1., 0., 0.], [1., 0., 0.]])
+    secs.fit_unit_currents()
+    assert_array_equal(np.ones((1, 2)), secs.sec_amps)
+
+    # curl free
+    secs = pysecs.SECS(sec_cf_loc=[[1., 0., 0.], [1., 0., 0.]])
+    secs.fit_unit_currents()
+    assert_array_equal(np.ones((1, 2)), secs.sec_amps)
+
+    # divergence free + curl free
+    secs = pysecs.SECS(sec_df_loc=[[1., 0., 0.], [1., 0., 0.]],
+                       sec_cf_loc=[[1., 0., 0.], [1., 0., 0.]])
+    secs.fit_unit_currents()
+    assert_array_equal(np.ones((1, 4)), secs.sec_amps)
+
+
+def test_fit_one_time():
+    """One timestep fit"""
+    secs = pysecs.SECS(sec_df_loc=[[1., 0., R_EARTH + 1e6],
+                                   [-1., 0., R_EARTH + 1e6]])
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.array([[1, 1, 1]])
+    secs.fit(obs_loc, obs_B)
+    assert_allclose([[6.40594202e+13, -7.41421248e+13]], secs.sec_amps)
+
+
+def test_fit_multi_time():
+    """One timestep fit"""
+    secs = pysecs.SECS(sec_df_loc=[[1., 0., R_EARTH + 1e6],
+                                   [-1., 0., R_EARTH + 1e6]])
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((2, 1, 3))
+    obs_B[1, :, :] *= 2
+    secs.fit(obs_loc, obs_B)
+    arr = np.array([6.40594202e+13, -7.41421248e+13])
+    expected = np.array([arr, 2*arr])
+    assert_allclose(expected, secs.sec_amps)
+
+
+def test_fit_obs_var():
+    """One timestep fit"""
+    secs = pysecs.SECS(sec_df_loc=[[1., 0., R_EARTH + 1e6],
+                                   [-1., 0., R_EARTH + 1e6]])
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((2, 1, 3))
+    obs_B[1, :, :] *= 2
+    obs_var = np.ones(obs_B.shape)
+    # Remove the z component from the fit of the second timestep
+    obs_var[1, :, 2] = np.inf
+    secs.fit(obs_loc, obs_B, obs_var=obs_var)
+    expected = np.array([[6.40594202e+13, -7.41421248e+13],
+                         [1.382015e+14, -1.382015e+14]])
+    assert_allclose(expected, secs.sec_amps, rtol=1e-6)
+
+
+def test_fit_epsilon():
+    """Test that epsilon removes some components"""
+    secs = pysecs.SECS(sec_df_loc=[[1., 0., R_EARTH + 1e6],
+                                   [-1., 0., R_EARTH + 1e6]])
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((2, 1, 3))
+    obs_B[1, :, :] *= 2
+    obs_var = np.ones(obs_B.shape)
+    # Remove the z component from the fit of the second timestep
+    obs_var[1, :, 2] = np.inf
+    secs.fit(obs_loc, obs_B, obs_var=obs_var, epsilon=0.8)
+    expected = np.array([[-5.041352e+12, -5.041352e+12],
+                         [1.382015e+14, -1.382015e+14]])
+    assert_allclose(expected, secs.sec_amps, rtol=1e-6)
+
+
+def test_predictB():
+    """Test that epsilon removes some components"""
+    secs = pysecs.SECS(sec_df_loc=[[1, 0, R_EARTH + 1e6],
+                                   [-1, 0, R_EARTH + 1e6],
+                                   [-1, 1, R_EARTH + 1e6],
+                                   [1, 1, R_EARTH + 1e6],
+                                   [0, 1, R_EARTH + 1e6],
+                                   [0, -1, R_EARTH + 1e6],
+                                   [-1, -1, R_EARTH + 1e6],
+                                   [1, -1, R_EARTH + 1e6]])
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((2, 1, 3))
+    obs_B[1, :, :] *= 2
+    secs.fit(obs_loc, obs_B)
+
+    # Predict at the same observatory location
+    B_pred = secs.predict(obs_loc)
+    assert_allclose(obs_B[:, 0, :], B_pred)
+
+    # Call the predict_B method directly
+    assert_allclose(secs.predict_B(obs_loc), secs.predict(obs_loc))
+
+
+def test_predictJ():
+    """Test the current sheet predictions"""
+    secs = pysecs.SECS(sec_df_loc=[[1, 0, R_EARTH + 1e6],
+                                   [-1, 0, R_EARTH + 1e6],
+                                   [-1, 1, R_EARTH + 1e6],
+                                   [1, 1, R_EARTH + 1e6],
+                                   [0, 1, R_EARTH + 1e6],
+                                   [0, -1, R_EARTH + 1e6],
+                                   [-1, -1, R_EARTH + 1e6],
+                                   [1, -1, R_EARTH + 1e6]])
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((2, 1, 3))
+    obs_B[1, :, :] *= 2
+    secs.fit(obs_loc, obs_B)
+
+    # Currents only on the SECS surface
+    J_pred = secs.predict(obs_loc, J=True)
+    assert_allclose(np.zeros((2, 3)), J_pred)
+
+    # Move up to the current sheet
+    pred_loc = np.array([[0, 0, R_EARTH + 1e6]])
+    J_pred = secs.predict(pred_loc, J=True)
+    arr = np.array([-1.148475e+08,  1.148417e+08,  0.000000e+00])
+    expected = np.array([arr, 2*arr])
+    assert_allclose(expected, J_pred, rtol=1e-6)
+
+    # Use the predict_J function call directly
+    assert_allclose(secs.predict_J(pred_loc), secs.predict(pred_loc, J=True))
