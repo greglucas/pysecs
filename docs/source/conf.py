@@ -35,8 +35,12 @@ sys.path.append('..')
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
+              'sphinx.ext.githubpages',  # Helpful for publishing to gh-pages
               'sphinx.ext.intersphinx',
-              'sphinx.ext.napoleon']
+              'sphinx.ext.napoleon',
+            #   'matplotlib.sphinxext.plot_directive',
+              'sphinx_gallery.gen_gallery',
+              ]
 
 autosummary_generate = True
 
@@ -60,7 +64,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'pysecs'
-copyright = "2018-2020, Greg Lucas"
+copyright = "2018-2021, Greg Lucas"
 author = "Greg Lucas"
 
 # The version info for the project you're documenting, acts as replacement
@@ -96,18 +100,25 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'nature'
+html_theme = 'pydata_sphinx_theme'
 
-# Theme options are theme-specific and customize the look and feel of a
-# theme further.  For a list of options available for each theme, see the
-# documentation.
-#
-# html_theme_options = {}
+html_theme_options = {
+  "github_url": "https://github.com/greglucas/pysecs",
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = []
+
+# Autosummary
+autosummary_generate = True
+
+# Sphinx gallery
+sphinx_gallery_conf = {
+     'examples_dirs': '../../examples',   # path to example scripts
+     'gallery_dirs': 'examples',  # path for where to save generated output
+     'matplotlib_animations': True,
+}
 
 
 # -- Options for HTMLHelp output ---------------------------------------
