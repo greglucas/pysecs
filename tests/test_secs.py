@@ -226,6 +226,22 @@ def test_curl_free_current_magnitudes():
     assert_allclose(J_test, J[:, 1], atol=1e-16)
 
 
+def test_curl_free_magnetic_magnitudes():
+    "Make sure the curl free magnetic amplitudes are correct."
+    # TODO: Update this test once T_cf is implemented
+    # Place the SEC at the North Pole
+    sec_r = R_EARTH + 100
+    sec_latlonr = np.array([[0., 0., sec_r]])
+    # Going out in an angle from the SEC (in longitude)
+    angles = np.linspace(0.1, 180)
+    obs_latlonr = np.zeros(angles.shape + (3,))
+    obs_latlonr[:, 1] = angles
+    obs_latlonr[:, 2] = sec_r
+
+    with pytest.raises(NotImplementedError, match='Curl Free Magnetic'):
+        pysecs.T_cf(obs_latlonr, sec_latlonr)
+
+
 def test_empty_object():
     "Testing empty secs object creation failure."
     with pytest.raises(ValueError):
@@ -242,3 +258,230 @@ def test_list_numpy():
     assert secs_list2.nsec == secs_np2.nsec
     assert_array_equal(secs_list2.sec_df_loc, secs_np2.sec_df_loc)
     assert_array_equal(secs_list2.sec_cf_loc, secs_np2.sec_cf_loc)
+
+
+def test_sec_bad_shape():
+    """Test bad input shape."""
+    # Wrong dimensions
+    x = np.array([[1, 0], [1, 0]])
+    with pytest.raises(ValueError, match='SEC DF locations'):
+        pysecs.SECS(sec_df_loc=x)
+    with pytest.raises(ValueError, match='SEC CF locations'):
+        pysecs.SECS(sec_cf_loc=x)
+
+
+def test_one_sec():
+    """Test 1-dimensional input location gets mapped properly."""
+    x1d = np.array([1, 0, 0])
+    secs = pysecs.SECS(sec_df_loc=x1d)
+    assert secs.nsec == 1
+    secs = pysecs.SECS(sec_cf_loc=x1d)
+    assert secs.nsec == 1
+
+
+def test_fit_unit_currents():
+    """Test the unit current function."""
+    # divergence free
+    secs = pysecs.SECS(sec_df_loc=[[1., 0., 0.], [1., 0., 0.]])
+    secs.fit_unit_currents()
+    assert_array_equal(np.ones((1, 2)), secs.sec_amps)
+
+    # curl free
+    secs = pysecs.SECS(sec_cf_loc=[[1., 0., 0.], [1., 0., 0.]])
+    secs.fit_unit_currents()
+    assert_array_equal(np.ones((1, 2)), secs.sec_amps)
+
+    # divergence free + curl free
+    secs = pysecs.SECS(sec_df_loc=[[1., 0., 0.], [1., 0., 0.]],
+                       sec_cf_loc=[[1., 0., 0.], [1., 0., 0.]])
+    secs.fit_unit_currents()
+    assert_array_equal(np.ones((1, 4)), secs.sec_amps)
+
+
+def test_fit_bad_obsloc():
+    """Test bad observation locations input."""
+    secs = pysecs.SECS(sec_df_loc=[1., 0., R_EARTH + 1e6])
+    obs_loc = np.array([[0, 0]])
+    obs_B = np.array([[1, 1, 1]])
+    with pytest.raises(ValueError, match="Observation locations"):
+        secs.fit(obs_loc, obs_B)
+
+
+def test_fit_one_time():
+    """One timestep fit."""
+    secs = pysecs.SECS(sec_df_loc=[[1., 0., R_EARTH + 1e6],
+                                   [-1., 0., R_EARTH + 1e6]])
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.array([[1, 1, 1]])
+    secs.fit(obs_loc, obs_B)
+    assert_allclose([[6.40594202e+13, -7.41421248e+13]], secs.sec_amps)
+
+
+def test_fit_multi_time():
+    """Multi timestep fits."""
+    secs = pysecs.SECS(sec_df_loc=[[1., 0., R_EARTH + 1e6],
+                                   [-1., 0., R_EARTH + 1e6]])
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((2, 1, 3))
+    obs_B[1, :, :] *= 2
+    secs.fit(obs_loc, obs_B)
+    arr = np.array([6.40594202e+13, -7.41421248e+13])
+    expected = np.array([arr, 2*arr])
+    assert_allclose(expected, secs.sec_amps)
+
+
+def test_fit_obs_var():
+    """Test that variance on observations changes the results."""
+    secs = pysecs.SECS(sec_df_loc=[[1., 0., R_EARTH + 1e6],
+                                   [-1., 0., R_EARTH + 1e6]])
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((2, 1, 3))
+    obs_B[1, :, :] *= 2
+    obs_var = np.ones(obs_B.shape)
+    # Remove the z component from the fit of the second timestep
+    obs_var[1, :, 2] = np.inf
+    secs.fit(obs_loc, obs_B, obs_var=obs_var)
+    expected = np.array([[6.40594202e+13, -7.41421248e+13],
+                         [1.382015e+14, -1.382015e+14]])
+    assert_allclose(expected, secs.sec_amps, rtol=1e-6)
+
+
+def test_fit_epsilon():
+    """Test that epsilon removes some components."""
+    secs = pysecs.SECS(sec_df_loc=[[1., 0., R_EARTH + 1e6],
+                                   [-1., 0., R_EARTH + 1e6]])
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((2, 1, 3))
+    obs_B[1, :, :] *= 2
+    obs_var = np.ones(obs_B.shape)
+    # Remove the z component from the fit of the second timestep
+    obs_var[1, :, 2] = np.inf
+    secs.fit(obs_loc, obs_B, obs_var=obs_var, epsilon=0.8)
+    expected = np.array([[-5.041352e+12, -5.041352e+12],
+                         [1.382015e+14, -1.382015e+14]])
+    assert_allclose(expected, secs.sec_amps, rtol=1e-6)
+
+
+def test_bad_predict():
+    """Test bad input to predict."""
+    secs = pysecs.SECS(sec_df_loc=[[1., 0., R_EARTH + 1e6],
+                                   [-1., 0., R_EARTH + 1e6]])
+
+    # Calling predict with the wrong shape
+    pred_loc = np.array([[0, 0]])
+    with pytest.raises(ValueError, match="Prediction locations"):
+        secs.predict(pred_loc)
+
+    # Calling predict before fitting
+    pred_loc = np.array([[0, 0, R_EARTH]])
+    with pytest.raises(ValueError, match="There are no currents associated"):
+        secs.predict(pred_loc)
+
+
+def test_predictB():
+    """Test that epsilon removes some components."""
+    secs = pysecs.SECS(sec_df_loc=[[1, 0, R_EARTH + 1e6],
+                                   [-1, 0, R_EARTH + 1e6],
+                                   [-1, 1, R_EARTH + 1e6],
+                                   [1, 1, R_EARTH + 1e6],
+                                   [0, 1, R_EARTH + 1e6],
+                                   [0, -1, R_EARTH + 1e6],
+                                   [-1, -1, R_EARTH + 1e6],
+                                   [1, -1, R_EARTH + 1e6]])
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((2, 1, 3))
+    obs_B[1, :, :] *= 2
+    secs.fit(obs_loc, obs_B)
+
+    # Predict at the same observatory location
+    B_pred = secs.predict(obs_loc)
+    assert_allclose(obs_B[:, 0, :], B_pred)
+
+    # Call the predict_B method directly
+    assert_allclose(secs.predict_B(obs_loc), secs.predict(obs_loc))
+
+
+def test_predictJ():
+    """Test the current sheet predictions (df)."""
+    secs = pysecs.SECS(sec_df_loc=[[1, 0, R_EARTH + 1e6],
+                                   [-1, 0, R_EARTH + 1e6],
+                                   [-1, 1, R_EARTH + 1e6],
+                                   [1, 1, R_EARTH + 1e6],
+                                   [0, 1, R_EARTH + 1e6],
+                                   [0, -1, R_EARTH + 1e6],
+                                   [-1, -1, R_EARTH + 1e6],
+                                   [1, -1, R_EARTH + 1e6]])
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((2, 1, 3))
+    obs_B[1, :, :] *= 2
+    secs.fit(obs_loc, obs_B)
+
+    # Currents only on the SECS surface
+    J_pred = secs.predict(obs_loc, J=True)
+    assert_allclose(np.zeros((2, 3)), J_pred)
+
+    # Move up to the current sheet
+    pred_loc = np.array([[0, 0, R_EARTH + 1e6]])
+    J_pred = secs.predict(pred_loc, J=True)
+    arr = np.array([-1.148475e+08,  1.148417e+08,  0.000000e+00])
+    expected = np.array([arr, 2*arr])
+    assert_allclose(expected, J_pred, rtol=1e-6)
+
+    # Use the predict_J function call directly
+    assert_allclose(secs.predict_J(pred_loc), secs.predict(pred_loc, J=True))
+
+
+def test_predictJ_cf():
+    """Test the current sheet predictions (cf)."""
+    sec_loc = np.array([[1, 0, R_EARTH + 1e6],
+                        [-1, 0, R_EARTH + 1e6],
+                        [-1, 1, R_EARTH + 1e6],
+                        [1, 1, R_EARTH + 1e6],
+                        [0, 1, R_EARTH + 1e6],
+                        [0, -1, R_EARTH + 1e6],
+                        [-1, -1, R_EARTH + 1e6],
+                        [1, -1, R_EARTH + 1e6]])
+    secs = pysecs.SECS(sec_cf_loc=sec_loc)
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    secs.fit_unit_currents()
+
+    # Currents only on the SECS surface
+    J_pred = secs.predict(obs_loc, J=True)
+    assert_allclose(np.zeros(3), J_pred)
+
+    # Move up to the current sheet
+    pred_loc = np.array([[0, 0, R_EARTH + 1e6]])
+    J_pred = secs.predict(pred_loc, J=True)
+    expected = np.array([0, 0,  1.169507e-14])
+    assert_allclose(expected, J_pred, rtol=1e-6, atol=1e-10)
+
+    # Use the predict_J function call directly
+    assert_allclose(secs.predict_J(pred_loc), secs.predict(pred_loc, J=True))
+
+
+def test_predictJ_cf_df():
+    """Test the current sheet predictions (cf+df)."""
+    sec_loc = np.array([[1, 0, R_EARTH + 1e6],
+                        [-1, 0, R_EARTH + 1e6],
+                        [-1, 1, R_EARTH + 1e6],
+                        [1, 1, R_EARTH + 1e6],
+                        [0, 1, R_EARTH + 1e6],
+                        [0, -1, R_EARTH + 1e6],
+                        [-1, -1, R_EARTH + 1e6],
+                        [1, -1, R_EARTH + 1e6]])
+    secs = pysecs.SECS(sec_df_loc=sec_loc, sec_cf_loc=sec_loc)
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    secs.fit_unit_currents()
+
+    # Currents only on the SECS surface
+    J_pred = secs.predict(obs_loc, J=True)
+    assert_allclose(np.zeros(3), J_pred)
+
+    # Move up to the current sheet
+    pred_loc = np.array([[0, 0, R_EARTH + 1e6]])
+    J_pred = secs.predict(pred_loc, J=True)
+    expected = np.array([0, 0, 1.169507e-14])
+    assert_allclose(expected, J_pred, rtol=1e-6, atol=1e-10)
+
+    # Use the predict_J function call directly
+    assert_allclose(secs.predict_J(pred_loc), secs.predict(pred_loc, J=True))

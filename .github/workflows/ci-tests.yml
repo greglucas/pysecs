@@ -12,7 +12,7 @@ jobs:
         python-version: [3.6, 3.9]
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash {0}
 
     steps:
       - uses: actions/checkout@v2
@@ -29,10 +29,21 @@ jobs:
 
       - name: Install pysecs
         run: |
-          pip install .
+          pip install -e .
 
       - name: Testing
         id: test
         run: |
-          python -m flake8
-          python -m pytest
+          flake8
+          pytest
+
+      - name: Coverage
+        id: coverage
+        # Only run coverage on one branch
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pip install coveralls pytest-cov
+          pytest --cov=pysecs
+          coveralls --service=github
