@@ -3,4 +3,4 @@
 Examples
 ========
 
-This is a collection of demos and examples of how to use pysecs.
+This is a collection of examples to demonstrate how to use pysecs.

@@ -38,7 +38,6 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.githubpages',  # Helpful for publishing to gh-pages
               'sphinx.ext.intersphinx',
               'sphinx.ext.napoleon',
-            #   'matplotlib.sphinxext.plot_directive',
               'sphinx_gallery.gen_gallery',
               ]
 
@@ -101,6 +100,8 @@ todo_include_todos = False
 # a list of builtin themes.
 #
 html_theme = 'pydata_sphinx_theme'
+
+html_logo = "_static/pysecs.png"
 
 html_theme_options = {
   "github_url": "https://github.com/greglucas/pysecs",

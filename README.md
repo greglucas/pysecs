@@ -9,9 +9,17 @@ pysecs is an open source library for calculating Spherical Elementary Current Sy
 
 ## Examples
 
-Example notebooks can be found in [notebooks/](./notebooks/)
+Examples can be found in [examples/](./examples/)
 
 ## Install
+
+The easiest method to install pysecs is with pip.
+
+```bash
+> pip install pysecs
+```
+
+For a source install you can follow these instructions:
 
 1. Clone the git repository
 
