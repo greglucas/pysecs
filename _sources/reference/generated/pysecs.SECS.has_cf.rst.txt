@@ -1,0 +1,6 @@
+﻿pysecs.SECS.has\_cf
+===================
+
+.. currentmodule:: pysecs
+
+.. autoproperty:: SECS.has_cf

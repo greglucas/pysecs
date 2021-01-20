@@ -1,0 +1,6 @@
+﻿pysecs.SECS.predict\_J
+======================
+
+.. currentmodule:: pysecs
+
+.. automethod:: SECS.predict_J

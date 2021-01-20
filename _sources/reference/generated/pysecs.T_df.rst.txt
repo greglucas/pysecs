@@ -1,0 +1,6 @@
+﻿pysecs.T\_df
+============
+
+.. currentmodule:: pysecs
+
+.. autofunction:: T_df

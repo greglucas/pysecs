@@ -1,0 +1,35 @@
+﻿pysecs.SECS
+===========
+
+.. currentmodule:: pysecs
+
+.. autoclass:: SECS
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SECS.__init__
+      ~SECS.fit
+      ~SECS.fit_unit_currents
+      ~SECS.predict
+      ~SECS.predict_B
+      ~SECS.predict_J
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SECS.has_cf
+      ~SECS.has_df
+      ~SECS.nsec
+   
+   

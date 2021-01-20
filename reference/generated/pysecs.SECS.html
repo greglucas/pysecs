@@ -1,0 +1,352 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pysecs.SECS &#8212; pysecs 0.0.4 documentation</title>
+    
+  <link rel="stylesheet" href="../../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+
+    
+  <link rel="stylesheet"
+    href="../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/gallery-dataframe.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/gallery-rendered-html.css" />
+    
+  <link rel="preload" as="script" href="../../_static/js/index.3da636dd464baa7582d2.js">
+
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="pysecs.SECS.fit" href="pysecs.SECS.fit.html" />
+    <link rel="prev" title="API reference" href="../index.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
+
+    <a class="navbar-brand" href="../../index.html">
+    
+      <img src="../../_static/pysecs.png" class="logo" alt="logo" />
+    
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
+        
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../installation.html">Installation</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../examples/index.html">Examples</a>
+        </li>
+        
+        <li class="nav-item active">
+            <a class="nav-link" href="../index.html">API reference</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../development/index.html">Contributing</a>
+        </li>
+        
+        
+      </ul>
+
+
+      
+
+      <ul class="navbar-nav">
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/greglucas/pysecs" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
+        
+        
+      </ul>
+    </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+    <div class="bd-toc-item active">
+    
+  
+    <ul class="nav bd-sidenav">
+        
+        
+        
+        
+        
+        
+          
+            
+                <li class="active">
+                    <a href="">pysecs.SECS</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="pysecs.SECS.fit.html">pysecs.SECS.fit</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="pysecs.SECS.fit_unit_currents.html">pysecs.SECS.fit_unit_currents</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="pysecs.SECS.predict.html">pysecs.SECS.predict</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="pysecs.SECS.predict_B.html">pysecs.SECS.predict_B</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="pysecs.SECS.predict_J.html">pysecs.SECS.predict_J</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="pysecs.SECS.has_df.html">pysecs.SECS.has_df</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="pysecs.SECS.has_cf.html">pysecs.SECS.has_cf</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="pysecs.SECS.nsec.html">pysecs.SECS.nsec</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="pysecs.T_df.html">pysecs.T_df</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="pysecs.T_cf.html">pysecs.T_cf</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="pysecs.J_df.html">pysecs.J_df</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="pysecs.J_cf.html">pysecs.J_cf</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="pysecs.calc_angular_distance.html">pysecs.calc_angular_distance</a>
+                </li>
+            
+          
+            
+                <li class="">
+                    <a href="pysecs.calc_bearing.html">pysecs.calc_bearing</a>
+                </li>
+            
+          
+        
+        
+        
+        
+      </ul>
+  
+  </nav>
+          </div>
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
+
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
+    
+    </ul>
+</nav>
+
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <div class="section" id="pysecs-secs">
+<h1>pysecs.SECS<a class="headerlink" href="#pysecs-secs" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="pysecs.SECS">
+<em class="property">class </em><code class="sig-prename descclassname">pysecs.</code><code class="sig-name descname">SECS</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sec_df_loc</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sec_cf_loc</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysecs.SECS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Spherical Elementary Current System (SECS).</p>
+<p>The algorithm is implemented directly in spherical coordinates
+from the equations of the 1999 Amm &amp; Viljanen paper <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sec_df_loc</strong> (<em>ndarray</em><em> (</em><em>nsec x 3</em><em> [</em><em>lat</em><em>, </em><em>lon</em><em>, </em><em>r</em><em>]</em><em>)</em>) – The latitude, longiutde, and radius of the divergence free (df) SEC locations.</p></li>
+<li><p><strong>sec_cf_loc</strong> (<em>ndarray</em><em> (</em><em>nsec x 3</em><em> [</em><em>lat</em><em>, </em><em>lon</em><em>, </em><em>r</em><em>]</em><em>)</em>) – The latitude, longiutde, and radius of the curl free (cf) SEC locations.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>Amm, O., and A. Viljanen. “Ionospheric disturbance magnetic field continuation
+from the ground to the ionosphere using spherical elementary current systems.”
+Earth, Planets and Space 51.6 (1999): 431-440. doi:10.1186/BF03352247</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="pysecs.SECS.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sec_df_loc</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sec_cf_loc</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pysecs.SECS.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pysecs.SECS.__init__" title="pysecs.SECS.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>([sec_df_loc, sec_cf_loc])</p></td>
+<td><p>Initialize self.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pysecs.SECS.fit.html#pysecs.SECS.fit" title="pysecs.SECS.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(obs_loc, obs_B[, obs_var, epsilon])</p></td>
+<td><p>Fits the SECS to the given observations.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pysecs.SECS.fit_unit_currents.html#pysecs.SECS.fit_unit_currents" title="pysecs.SECS.fit_unit_currents"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_unit_currents</span></code></a>()</p></td>
+<td><p>Sets all SECs to a unit current amplitude.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pysecs.SECS.predict.html#pysecs.SECS.predict" title="pysecs.SECS.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(pred_loc[, J])</p></td>
+<td><p>Calculate the predicted magnetic field or currents.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pysecs.SECS.predict_B.html#pysecs.SECS.predict_B" title="pysecs.SECS.predict_B"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_B</span></code></a>(pred_loc)</p></td>
+<td><p>Calculate the predicted magnetic fields.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pysecs.SECS.predict_J.html#pysecs.SECS.predict_J" title="pysecs.SECS.predict_J"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_J</span></code></a>(pred_loc)</p></td>
+<td><p>Calculate the predicted currents.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="pysecs.SECS.has_cf.html#pysecs.SECS.has_cf" title="pysecs.SECS.has_cf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_cf</span></code></a></p></td>
+<td><p>Whether this system has any curl free currents.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pysecs.SECS.has_df.html#pysecs.SECS.has_df" title="pysecs.SECS.has_df"><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_df</span></code></a></p></td>
+<td><p>Whether this system has any divergence free currents.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pysecs.SECS.nsec.html#pysecs.SECS.nsec" title="pysecs.SECS.nsec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nsec</span></code></a></p></td>
+<td><p>The number of elementary currents in this system.</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
+    <a class='left-prev' id="prev-link" href="../index.html" title="previous page">API reference</a>
+    <a class='right-next' id="next-link" href="pysecs.SECS.fit.html" title="next page">pysecs.SECS.fit</a>
+
+              </div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+
+    
+  <script src="../../_static/js/index.3da636dd464baa7582d2.js"></script>
+
+
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    <p>
+          &copy; Copyright 2018-2021, Greg Lucas.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.4.3.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,6 @@
+﻿pysecs.J\_cf
+============
+
+.. currentmodule:: pysecs
+
+.. autofunction:: J_cf

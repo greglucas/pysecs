@@ -1,0 +1,6 @@
+﻿pysecs.T\_cf
+============
+
+.. currentmodule:: pysecs
+
+.. autofunction:: T_cf

@@ -1,0 +1,6 @@
+﻿pysecs.SECS.has\_df
+===================
+
+.. currentmodule:: pysecs
+
+.. autoproperty:: SECS.has_df

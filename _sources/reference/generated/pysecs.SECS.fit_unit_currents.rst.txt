@@ -1,0 +1,6 @@
+﻿pysecs.SECS.fit\_unit\_currents
+===============================
+
+.. currentmodule:: pysecs
+
+.. automethod:: SECS.fit_unit_currents

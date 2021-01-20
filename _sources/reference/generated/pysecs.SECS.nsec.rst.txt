@@ -1,0 +1,6 @@
+﻿pysecs.SECS.nsec
+================
+
+.. currentmodule:: pysecs
+
+.. autoproperty:: SECS.nsec

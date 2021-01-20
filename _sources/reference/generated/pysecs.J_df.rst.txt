@@ -1,0 +1,6 @@
+﻿pysecs.J\_df
+============
+
+.. currentmodule:: pysecs
+
+.. autofunction:: J_df

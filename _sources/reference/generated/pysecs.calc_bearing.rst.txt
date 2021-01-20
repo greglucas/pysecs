@@ -1,0 +1,6 @@
+﻿pysecs.calc\_bearing
+====================
+
+.. currentmodule:: pysecs
+
+.. autofunction:: calc_bearing
