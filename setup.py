@@ -72,7 +72,7 @@ class PublishCommand(Command):
 # Where the magic happens:
 setup(
     name=NAME,
-    version='0.0.4',
+    version='0.1.0',
     description=DESCRIPTION,
     long_description=long_description,
     author=AUTHOR,
@@ -96,7 +96,8 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8'
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
     # $ setup.py publish support.
     cmdclass={
