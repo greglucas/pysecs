@@ -128,7 +128,6 @@ class SECS:
         for i in range(ntimes):
             
             # Only (re-)calculate SVD when necessary
-            # if not np.all(svd_in == svd_in_old):
             if i == 0 or not np.all(obs_var[i] == obs_var[i-1]):
 
                 # Weight T_obs with obs_var
