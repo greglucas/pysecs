@@ -120,31 +120,37 @@ class SECS:
         self.sec_amps_var = np.empty((ntimes, self.nsec))
 
         # Calculate the singular value decomposition (SVD)
-        # T_obs has shape (nobs, 3, nsec), we need to reshape it
-        # and add an extra dimension for time, making it (1, nobs*3, nsec)
-        # obs_var has shape (ntimes, nobs, 3), reshape it and add an
-        # extra dimension for the secs, making it (ntimes, nobs*3, 1)
-
-        # After all of the reshaping and division, the full svd_in matrix
-        # has shape (ntimes, nobs*3, nsec)
-        svd_in = (T_obs.reshape(-1, self.nsec)[np.newaxis, :] /
-                  obs_var.reshape((ntimes, -1))[..., np.newaxis])
+        # NOTE: T_obs has shape (nobs, 3, nsec), we reshape it
+        # to (nobs*3, nsec); obs_var has shape (ntimes, nobs, 3), 
+        # we reshape it to (ntimes, nobs*3), then loop over ntimes
+        # to solve using (potentially) time-dependent observation 
+        # error variances to weight the observations
         for i in range(ntimes):
-            # Iterate through all times, only calculating the SVD when needed
-            # The first timestep, or anytime the variance changes
-            if i == 0 or not np.all(svd_in[i, ...] == svd_in[i-1, ...]):
-                U, S, Vh = np.linalg.svd(svd_in[i, ...], full_matrices=False)
+            
+            # Only (re-)calculate SVD when necessary
+            if i == 0 or not np.all(obs_var[i] == obs_var[i-1]):
+
+                # Weight T_obs with obs_var
+                svd_in = (T_obs.reshape(-1, self.nsec) /
+                          obs_var[i].ravel()[:, np.newaxis])
+
+                # Find singular value decompostion
+                U, S, Vh = np.linalg.svd(svd_in, full_matrices=False)
 
                 # Divide by infinity (1/S) gives zero weights
                 W = 1./S
+
                 # Eliminate the small singular values (less than epsilon)
                 # by giving them zero weight
                 W[S < epsilon*S.max()] = 0.
 
+                # Update VWU if obs_var changed
                 VWU = Vh.T @ (np.diag(W) @ U.T)
 
+            # Solve for SEC amplitudes and error variances
             # shape: ntimes x nsec
-            self.sec_amps[i, :] = (VWU @ (obs_B[i, ...]/obs_var[i, ...]).reshape(-1).T).T
+            self.sec_amps[i, :] = (VWU @ (obs_B[i]/obs_var[i]).reshape(-1).T).T
+
             # Maybe we want the variance of the predictions sometime later...?
             # shape: ntimes x nsec
             self.sec_amps_var[i, :] = np.sum((Vh.T * W)**2, axis=1)
