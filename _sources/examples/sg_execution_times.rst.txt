@@ -5,12 +5,12 @@
 
 Computation times
 =================
-**00:18.014** total execution time for **examples** files:
+**00:25.556** total execution time for **examples** files:
 
 +------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_examples_plot_animation.py` (``plot_animation.py``)                 | 00:17.441 | 0.0 MB |
+| :ref:`sphx_glr_examples_plot_animation.py` (``plot_animation.py``)                 | 00:24.788 | 0.0 MB |
 +------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_examples_plot_J_surface.py` (``plot_J_surface.py``)                 | 00:00.336 | 0.0 MB |
+| :ref:`sphx_glr_examples_plot_J_surface.py` (``plot_J_surface.py``)                 | 00:00.433 | 0.0 MB |
 +------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_examples_plot_B_divergence_free.py` (``plot_B_divergence_free.py``) | 00:00.237 | 0.0 MB |
+| :ref:`sphx_glr_examples_plot_B_divergence_free.py` (``plot_B_divergence_free.py``) | 00:00.336 | 0.0 MB |
 +------------------------------------------------------------------------------------+-----------+--------+
