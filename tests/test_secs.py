@@ -330,17 +330,17 @@ def test_fit_multi_time():
     assert_allclose(expected, secs.sec_amps)
 
 
-def test_fit_obs_var():
+def test_fit_obs_std():
     """Test that variance on observations changes the results."""
     secs = pysecs.SECS(sec_df_loc=[[1., 0., R_EARTH + 1e6],
                                    [-1., 0., R_EARTH + 1e6]])
     obs_loc = np.array([[0, 0, R_EARTH]])
     obs_B = np.ones((2, 1, 3))
     obs_B[1, :, :] *= 2
-    obs_var = np.ones(obs_B.shape)
+    obs_std = np.ones(obs_B.shape)
     # Remove the z component from the fit of the second timestep
-    obs_var[1, :, 2] = np.inf
-    secs.fit(obs_loc, obs_B, obs_var=obs_var)
+    obs_std[1, :, 2] = np.inf
+    secs.fit(obs_loc, obs_B, obs_std=obs_std)
     expected = np.array([[6.40594202e+13, -7.41421248e+13],
                          [1.382015e+14, -1.382015e+14]])
     assert_allclose(expected, secs.sec_amps, rtol=1e-6)
@@ -353,10 +353,10 @@ def test_fit_epsilon():
     obs_loc = np.array([[0, 0, R_EARTH]])
     obs_B = np.ones((2, 1, 3))
     obs_B[1, :, :] *= 2
-    obs_var = np.ones(obs_B.shape)
+    obs_std = np.ones(obs_B.shape)
     # Remove the z component from the fit of the second timestep
-    obs_var[1, :, 2] = np.inf
-    secs.fit(obs_loc, obs_B, obs_var=obs_var, epsilon=0.8)
+    obs_std[1, :, 2] = np.inf
+    secs.fit(obs_loc, obs_B, obs_std=obs_std, epsilon=0.8)
     expected = np.array([[-5.041352e+12, -5.041352e+12],
                          [1.382015e+14, -1.382015e+14]])
     assert_allclose(expected, secs.sec_amps, rtol=1e-6)
