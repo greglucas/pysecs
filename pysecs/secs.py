@@ -71,7 +71,7 @@ class SECS:
             nsec += len(self.sec_cf_loc)
         return nsec
 
-    def fit(self, obs_loc, obs_B, obs_var=None, epsilon=0.05):
+    def fit(self, obs_loc, obs_B, obs_std=None, epsilon=0.05):
         """Fits the SECS to the given observations.
 
         Given a number of observation locations and measurements,
@@ -88,10 +88,10 @@ class SECS:
         obs_B: ndarray (ntimes x nobs x 3 [Bx, By, Bz])
             An array containing the measured/observed B-fields.
 
-        obs_var : ndarray (ntimes x nobs x 3 [varX, varY, varZ]), optional
-            Variances in the components at each observation location. Can be used to
-            weight different observation locations more/less heavily. Infinite variance
-            effectively eliminates the observation from the fit.
+        obs_std : ndarray (ntimes x nobs x 3 [varX, varY, varZ]), optional
+            Standard error of vector components at each observation location. 
+            This can be used to weight different observations more/less heavily.
+            An infinite value eliminates the observation from the fit.
             Default: ones(nobs x 3) equal weights
 
         epsilon : float
@@ -106,9 +106,9 @@ class SECS:
             # Just a single snapshot given, so expand the dimensionality
             obs_B = obs_B[np.newaxis, ...]
 
-        # Assume unit variance of all measurements
-        if obs_var is None:
-            obs_var = np.ones(obs_B.shape)
+        # Assume unit standard error of all measurements
+        if obs_std is None:
+            obs_std = np.ones(obs_B.shape)
 
         ntimes = len(obs_B)
 
@@ -121,39 +121,41 @@ class SECS:
 
         # Calculate the singular value decomposition (SVD)
         # NOTE: T_obs has shape (nobs, 3, nsec), we reshape it
-        # to (nobs*3, nsec); obs_var has shape (ntimes, nobs, 3), 
+        # to (nobs*3, nsec); obs_std has shape (ntimes, nobs, 3), 
         # we reshape it to (ntimes, nobs*3), then loop over ntimes
         # to solve using (potentially) time-dependent observation 
-        # error variances to weight the observations
+        # standard errors to weight the observations
         for i in range(ntimes):
             
             # Only (re-)calculate SVD when necessary
-            if i == 0 or not np.all(obs_var[i] == obs_var[i-1]):
+            if i == 0 or not np.all(obs_std[i] == obs_std[i-1]):
 
-                # Weight T_obs with obs_var
+                # Weight T_obs with obs_std
                 svd_in = (T_obs.reshape(-1, self.nsec) /
-                          obs_var[i].ravel()[:, np.newaxis])
+                          obs_std[i].ravel()[:, np.newaxis])
 
                 # Find singular value decompostion
                 U, S, Vh = np.linalg.svd(svd_in, full_matrices=False)
 
-                # Divide by infinity (1/S) gives zero weights
+                # Eliminate singular values less than epsilon by setting their
+                # reciprocal to zero (setting S to infinity firsts avoids
+                #  divide-by-zero warings)
+                S[S < epsilon * S.max()] = np.inf
                 W = 1./S
 
-                # Eliminate the small singular values (less than epsilon)
-                # by giving them zero weight
-                W[S < epsilon*S.max()] = 0.
-
-                # Update VWU if obs_var changed
+                # Update VWU if obs_std changed
                 VWU = Vh.T @ (np.diag(W) @ U.T)
 
             # Solve for SEC amplitudes and error variances
             # shape: ntimes x nsec
-            self.sec_amps[i, :] = (VWU @ (obs_B[i]/obs_var[i]).reshape(-1).T).T
+            self.sec_amps[i, :] = (VWU @ (obs_B[i] / obs_std[i]).reshape(-1).T).T
 
             # Maybe we want the variance of the predictions sometime later...?
             # shape: ntimes x nsec
-            self.sec_amps_var[i, :] = np.sum((Vh.T * W)**2, axis=1)
+            valid = np.isfinite(obs_std[i].reshape(-1))
+            self.sec_amps_var[i, :] = np.sum(
+                (VWU[:,valid] * obs_std[i].reshape(-1)[valid])**2,
+                axis=1)
 
         return self
 

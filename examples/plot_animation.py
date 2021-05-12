@@ -57,15 +57,15 @@ B_obs = np.repeat(B_obs[:, np.newaxis, :], nobs, axis=1)
 B_obs[:, :, 0] *= 2*np.sin(np.deg2rad(obs_lat_lon_r[:, 0]))
 B_obs[:, :, 1] *= 2*np.sin(np.deg2rad(obs_lat_lon_r[:, 1]))
 
-B_var = np.ones(B_obs.shape)
+B_std = np.ones(B_obs.shape)
 # Ignore the Z component
-B_var[..., 2] = np.inf
-# Can modify the variance as a function of time to
+B_std[..., 2] = np.inf
+# Can modify the standard error as a function of time to
 # see how that changes the fits too
-# B_var[:, 0, 1] = 1 + ts
+# B_std[:, 0, 1] = 1 + ts
 
 # Fit the data, requires observation locations and data
-secs.fit(obs_loc=obs_lat_lon_r, obs_B=B_obs, obs_var=B_var)
+secs.fit(obs_loc=obs_lat_lon_r, obs_B=B_obs, obs_std=B_std)
 
 # Create prediction points
 # Extend it a little beyond the observation points (-11, 11)
