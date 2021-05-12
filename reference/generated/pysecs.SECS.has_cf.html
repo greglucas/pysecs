@@ -7,7 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>pysecs.SECS.has_cf &#8212; pysecs 0.1.1 documentation</title>
     
-  <link rel="stylesheet" href="../../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
+  <link href="../../_static/css/theme.css" rel="stylesheet" />
+  <link href="../../_static/css/index.c5995385ac14fb8791e8eb36b4908be2.css" rel="stylesheet" />
 
     
   <link rel="stylesheet"
@@ -19,22 +20,18 @@
 
     
       
-  <link rel="stylesheet"
-    href="../../_static/vendor/open-sans_all/1.44.1/index.css">
-  <link rel="stylesheet"
-    href="../../_static/vendor/lato_latin-ext/1.44.1/index.css">
 
     
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/gallery.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/gallery-binder.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/gallery-dataframe.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/gallery-rendered-html.css" />
     
-  <link rel="preload" as="script" href="../../_static/js/index.d3f166471bb80abb5163.js">
+  <link rel="preload" as="script" href="../../_static/js/index.1c5a1a01449ed65a7b51.js">
 
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
     <script src="../../_static/doctools.js"></script>
@@ -44,58 +41,82 @@
     <link rel="prev" title="pysecs.SECS.has_df" href="pysecs.SECS.has_df.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
+    
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
-<div class="container-xl">
+    <div class="container-fluid" id="banner"></div>
 
-    <a class="navbar-brand" href="../../index.html">
     
-      <img src="../../_static/pysecs.png" class="logo" alt="logo" />
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
     
-    </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-    </button>
+    
 
-    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
-      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
-        
-        
-        <li class="nav-item ">
-            <a class="nav-link" href="../../installation.html">Installation</a>
-        </li>
-        
-        <li class="nav-item ">
-            <a class="nav-link" href="../../examples/index.html">Examples</a>
-        </li>
-        
-        <li class="nav-item active">
-            <a class="nav-link" href="../index.html">API reference</a>
-        </li>
-        
-        <li class="nav-item ">
-            <a class="nav-link" href="../../development/index.html">Contributing</a>
-        </li>
-        
-        
-      </ul>
+<a class="navbar-brand" href="../../index.html">
+  <img src="../../_static/pysecs.png" class="logo" alt="logo">
+</a>
 
 
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
       
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../installation.html">
+  Installation
+ </a>
+</li>
 
-      <ul class="navbar-nav">
-        
-          <li class="nav-item">
-            <a class="nav-link" href="https://github.com/greglucas/pysecs" target="_blank" rel="noopener">
-              <span><i class="fab fa-github-square"></i></span>
-            </a>
-          </li>
-        
-        
-      </ul>
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../examples/index.html">
+  Examples
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="../index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../development/index.html">
+  Contributing
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
     </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/greglucas/pysecs" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
 </div>
     </nav>
     
@@ -103,138 +124,124 @@
     <div class="container-xl">
       <div class="row">
           
-          <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
   <i class="icon fas fa-search"></i>
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form>
-<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-
-    <div class="bd-toc-item active">
-    
-  
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
     <ul class="nav bd-sidenav">
-        
-        
-        
-        
-        
-        
-          
+ <li class="toctree-l1">
+  <a class="reference internal" href="pysecs.SECS.html">
+   pysecs.SECS
+  </a>
+ </li>
+</ul>
+<ul class="current nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="pysecs.SECS.fit.html">
+   pysecs.SECS.fit
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="pysecs.SECS.fit_unit_currents.html">
+   pysecs.SECS.fit_unit_currents
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="pysecs.SECS.predict.html">
+   pysecs.SECS.predict
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="pysecs.SECS.predict_B.html">
+   pysecs.SECS.predict_B
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="pysecs.SECS.predict_J.html">
+   pysecs.SECS.predict_J
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="pysecs.SECS.has_df.html">
+   pysecs.SECS.has_df
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   pysecs.SECS.has_cf
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="pysecs.SECS.nsec.html">
+   pysecs.SECS.nsec
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="pysecs.T_df.html">
+   pysecs.T_df
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="pysecs.T_cf.html">
+   pysecs.T_cf
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="pysecs.J_df.html">
+   pysecs.J_df
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="pysecs.J_cf.html">
+   pysecs.J_cf
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="pysecs.calc_angular_distance.html">
+   pysecs.calc_angular_distance
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="pysecs.calc_bearing.html">
+   pysecs.calc_bearing
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
             
-                <li class="">
-                    <a href="pysecs.SECS.html">pysecs.SECS</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="pysecs.SECS.fit.html">pysecs.SECS.fit</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="pysecs.SECS.fit_unit_currents.html">pysecs.SECS.fit_unit_currents</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="pysecs.SECS.predict.html">pysecs.SECS.predict</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="pysecs.SECS.predict_B.html">pysecs.SECS.predict_B</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="pysecs.SECS.predict_J.html">pysecs.SECS.predict_J</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="pysecs.SECS.has_df.html">pysecs.SECS.has_df</a>
-                </li>
-            
-          
-            
-                <li class="active">
-                    <a href="">pysecs.SECS.has_cf</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="pysecs.SECS.nsec.html">pysecs.SECS.nsec</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="pysecs.T_df.html">pysecs.T_df</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="pysecs.T_cf.html">pysecs.T_cf</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="pysecs.J_df.html">pysecs.J_df</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="pysecs.J_cf.html">pysecs.J_cf</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="pysecs.calc_angular_distance.html">pysecs.calc_angular_distance</a>
-                </li>
-            
-          
-            
-                <li class="">
-                    <a href="pysecs.calc_bearing.html">pysecs.calc_bearing</a>
-                </li>
-            
-          
-        
-        
-        
-        
-      </ul>
-  
-  </nav>
-          </div>
           
 
           
           <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
               
+              <div class="toc-item">
+                
 
 <nav id="bd-toc-nav">
-    <ul class="nav section-nav flex-column">
     
-    </ul>
 </nav>
-
-
+              </div>
               
+              <div class="toc-item">
+                
+              </div>
+              
+            
           </div>
           
 
+          
+          
+            
           
           <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
               
@@ -242,9 +249,9 @@
                 
   <div class="section" id="pysecs-secs-has-cf">
 <h1>pysecs.SECS.has_cf<a class="headerlink" href="#pysecs-secs-has-cf" title="Permalink to this headline">¶</a></h1>
-<dl class="py method">
-<dt id="pysecs.SECS.has_cf">
-<em class="property">property </em><code class="sig-prename descclassname">SECS.</code><code class="sig-name descname">has_cf</code><a class="headerlink" href="#pysecs.SECS.has_cf" title="Permalink to this definition">¶</a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="pysecs.SECS.has_cf">
+<em class="property"><span class="pre">property</span> </em><span class="sig-prename descclassname"><span class="pre">SECS.</span></span><span class="sig-name descname"><span class="pre">has_cf</span></span><a class="headerlink" href="#pysecs.SECS.has_cf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether this system has any curl free currents.</p>
 </dd></dl>
 
@@ -266,17 +273,24 @@
 
       </div>
     </div>
+  
+  <script src="../../_static/js/index.1c5a1a01449ed65a7b51.js"></script>
 
-    
-  <script src="../../_static/js/index.d3f166471bb80abb5163.js"></script>
-
-
-    <footer class="footer mt-5 mt-md-0">
+  <footer class="footer mt-5 mt-md-0">
   <div class="container">
-    <p>
-          &copy; Copyright 2018-2021, Greg Lucas.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.4.3.<br/>
-    </p>
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2018-2021, Greg Lucas.<br/>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.0.1.<br/>
+</p>
+    </div>
+    
   </div>
 </footer>
   </body>
