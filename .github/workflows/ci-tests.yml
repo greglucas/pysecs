@@ -3,10 +3,8 @@ name: Tests
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
-    branches:
-      - master
 
 jobs:
   build:
@@ -15,41 +13,24 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [3.6, 3.9]
-    defaults:
-      run:
-        shell: bash {0}
+        python-version: [3.10, 3.11, 3.12, 3.13]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: |
-          pip install numpy
-          pip install flake8 pytest
-
-      - name: Install pysecs
-        run: |
-          pip install -e .
+          pip install .[dev]
 
       - name: Testing
         id: test
         run: |
-          flake8
-          pytest
+          pytest --cov=pysecs --cov=tests
 
-      - name: Coverage
-        id: coverage
-        # Only run coverage on one branch
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'}}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          pip install coveralls pytest-cov
-          pytest --cov=pysecs
-          coveralls --service=github
+      - name: Upload code coverage
+        uses: codecov/codecov-action@v3

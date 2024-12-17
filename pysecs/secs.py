@@ -89,7 +89,7 @@ class SECS:
             An array containing the measured/observed B-fields.
 
         obs_std : ndarray (ntimes x nobs x 3 [varX, varY, varZ]), optional
-            Standard error of vector components at each observation location. 
+            Standard error of vector components at each observation location.
             This can be used to weight different observations more/less heavily.
             An infinite value eliminates the observation from the fit.
             Default: ones(nobs x 3) equal weights
@@ -252,7 +252,7 @@ class SECS:
         return self.predict(pred_loc, J=True)
 
     def _calc_T(self, obs_loc):
-        """Calculates the T transfer matrix.
+        """Calculate the T transfer matrix.
 
         The magnetic field transfer matrix to go from SEC locations to observation
         locations. It assumes unit current amplitudes that will then be
@@ -272,7 +272,7 @@ class SECS:
         return T
 
     def _calc_J(self, obs_loc):
-        """Calculates the J transfer matrix.
+        """Calculate the J transfer matrix.
 
         The current transfer matrix to go from SEC locations to observation
         locations. It assumes unit current amplitudes that will then be
@@ -293,7 +293,7 @@ class SECS:
 
 
 def T_df(obs_loc, sec_loc):
-    """Calculates the divergence free magnetic field transfer function.
+    """Calculate the divergence free magnetic field transfer function.
 
     The transfer function goes from SEC location to observation location
     and assumes unit current SECs at the given locations.
@@ -378,7 +378,7 @@ def T_df(obs_loc, sec_loc):
 
 
 def T_cf(obs_loc, sec_loc):
-    """Calculates the curl free magnetic field transfer function.
+    """Calculate the curl free magnetic field transfer function.
 
     The transfer function goes from SEC location to observation location
     and assumes unit current SECs at the given locations.
@@ -400,7 +400,7 @@ def T_cf(obs_loc, sec_loc):
 
 
 def J_df(obs_loc, sec_loc):
-    """Calculates the divergence free current density transfer function.
+    """Calculate the divergence free current density transfer function.
 
     The transfer function goes from SEC location to observation location
     and assumes unit current SECs at the given locations.
@@ -448,7 +448,7 @@ def J_df(obs_loc, sec_loc):
 
 
 def J_cf(obs_loc, sec_loc):
-    """Calculates the curl free magnetic field transfer function.
+    """Calculate the curl free magnetic field transfer function.
 
     The transfer function goes from SEC location to observation location
     and assumes unit current SECs at the given locations.
