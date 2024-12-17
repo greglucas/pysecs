@@ -68,6 +68,7 @@ testpaths = [
 ]
 addopts = [
     "--import-mode=importlib",
+    "--cov",
 ]
 
 [tool.ruff]
@@ -77,6 +78,8 @@ lint.ignore = ["B028", "D203", "D212", "N802", "N803", "N806", "PLR0913", "PLR20
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["ANN", "D", "S"]
+"examples/*" = ["ANN", "D", "S"]
+"docs/source/*" = ["ANN", "D", "S"]
 ".github/*" = ["S"]
 
 [tool.ruff.lint.pydocstyle]

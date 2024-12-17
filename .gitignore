@@ -1,5 +1,6 @@
 docs/source/examples
 docs/source/reference/generated
+docs/source/sg_execution_times.rst
 
 led / optimized / DLL files
 __pycache__/
