@@ -1,6 +1,11 @@
 # pysecs
 
-pysecs is an open source library for calculating Spherical Elementary Current Systems (SECS).
+[![DOI](https://zenodo.org/badge/148513774.svg)](https://doi.org/10.5281/zenodo.14511595)
+[![PyPi](https://badge.fury.io/py/pysecs.svg)](https://badge.fury.io/py/pysecs)
+[![Downloads](https://static.pepy.tech/badge/pysecs/month)](https://pepy.tech/project/pysecs)
+
+pysecs is an open-source library for calculating Spherical Elementary Current Systems (SECS).
+
 
 ## Features
 
@@ -30,7 +35,7 @@ For a source install you can follow these instructions:
 2. Build and install the package
 
     ```bash
-    > python setup.py install
+    > pip install .
     ```
 
 3. Testing
@@ -49,6 +54,13 @@ The code is released under an MIT license
 
 This package has been developed from different publications. Please consider citing the papers
 that are relevant to the work you are doing if you are utilizing this code.
+
+### [Software](https://doi.org/10.5281/zenodo.14511596)
+
+```bibtex
+Lucas, G., Rigler, E. J., Murphy, B. (2024). greglucas/pysecs: REL: v0.3.0 (v0.3.0).
+Zenodo. https://doi.org/10.5281/zenodo.14511596
+```
 
 ### [Original Paper](https://doi.org/10.5636/jgg.49.947)
 
