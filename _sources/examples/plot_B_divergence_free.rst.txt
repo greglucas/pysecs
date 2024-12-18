@@ -10,8 +10,8 @@
     .. note::
         :class: sphx-glr-download-link-note
 
-        Click :ref:`here <sphx_glr_download_examples_plot_B_divergence_free.py>`
-        to download the full example code
+        :ref:`Go to the end <sphx_glr_download_examples_plot_B_divergence_free.py>`
+        to download the full example code.
 
 .. rst-class:: sphx-glr-example-title
 
@@ -25,29 +25,33 @@ This example demonstrates the resulting angular profile of
 an SECS pole placed at the north pole. Figure 2 from
 Amm and Viljanen 1999.
 
-.. GENERATED FROM PYTHON SOURCE LINES 9-60
+.. GENERATED FROM PYTHON SOURCE LINES 9-63
 
 
 
-.. image:: /examples/images/sphx_glr_plot_B_divergence_free_001.png
-    :alt: Amm and Viljanen (1999) Figure 2
-    :class: sphx-glr-single-img
+.. image-sg:: /examples/images/sphx_glr_plot_B_divergence_free_001.png
+   :alt: Amm and Viljanen (1999) Figure 2
+   :srcset: /examples/images/sphx_glr_plot_B_divergence_free_001.png
+   :class: sphx-glr-single-img
 
 
 
 
 
-.. code-block:: default
+.. code-block:: Python
+
 
     import matplotlib.pyplot as plt
     import numpy as np
+
     from pysecs import SECS
+
 
     # Radius of Earth
     R_E = 6378e3
 
     # Pole of the current system at the North Pole
-    sec_loc = np.array([90., 0., R_E + 100e3])
+    sec_loc = np.array([90.0, 0.0, R_E + 100e3])
 
     # Set up the system with a single SEC
     system_df = SECS(sec_df_loc=sec_loc)
@@ -66,56 +70,54 @@ Amm and Viljanen 1999.
     pred_loc = np.zeros(shape=(N, 3))
     angles = np.linspace(0, 45, N)
 
-    pred_loc[:, 0] = 90-angles
+    pred_loc[:, 0] = 90 - angles
     pred_loc[:, 2] = R_E
 
     B_pred = system_df.predict(pred_loc=pred_loc)
 
     # B_theta == -Bx == -B_pred[:,0]
     # Convert to nT (1e9)
-    B_theta = -B_pred[:, 0]*1e9
+    B_theta = -B_pred[:, 0] * 1e9
     # B_r == -Bz = -B_pred[:,2]
-    B_r = -B_pred[:, 2]*1e9
+    B_r = -B_pred[:, 2] * 1e9
 
     fig, ax = plt.subplots()
 
-    ax.plot(angles, B_theta, c='b', label=r'B$_{\theta}$')
-    ax.plot(angles, B_r, c='r', label=r'B$_r$')
-    ax.legend(loc='upper right')
+    ax.plot(angles, B_theta, c="b", label=r"B$_{\theta}$")
+    ax.plot(angles, B_r, c="r", label=r"B$_r$")
+    ax.legend(loc="upper right")
     ax.set_xlim(angles[0], angles[-1])
     ax.set_ylim(-5, 10)
-    ax.set_xlabel('Angle from pole (deg)')
-    ax.set_ylabel('B (nT)')
-    ax.axhline(0., c='k', alpha=0.5, linewidth=0.5)
-    ax.set_title('Amm and Viljanen (1999) Figure 2')
+    ax.set_xlabel("Angle from pole (deg)")
+    ax.set_ylabel("B (nT)")
+    ax.axhline(0.0, c="k", alpha=0.5, linewidth=0.5)
+    ax.set_title("Amm and Viljanen (1999) Figure 2")
 
     plt.show()
 
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  0.299 seconds)
+   **Total running time of the script:** (0 minutes 0.138 seconds)
 
 
 .. _sphx_glr_download_examples_plot_B_divergence_free.py:
 
+.. only:: html
 
-.. only :: html
+  .. container:: sphx-glr-footer sphx-glr-footer-example
 
- .. container:: sphx-glr-footer
-    :class: sphx-glr-footer-example
+    .. container:: sphx-glr-download sphx-glr-download-jupyter
 
+      :download:`Download Jupyter notebook: plot_B_divergence_free.ipynb <plot_B_divergence_free.ipynb>`
 
+    .. container:: sphx-glr-download sphx-glr-download-python
 
-  .. container:: sphx-glr-download sphx-glr-download-python
+      :download:`Download Python source code: plot_B_divergence_free.py <plot_B_divergence_free.py>`
 
-     :download:`Download Python source code: plot_B_divergence_free.py <plot_B_divergence_free.py>`
+    .. container:: sphx-glr-download sphx-glr-download-zip
 
-
-
-  .. container:: sphx-glr-download sphx-glr-download-jupyter
-
-     :download:`Download Jupyter notebook: plot_B_divergence_free.ipynb <plot_B_divergence_free.ipynb>`
+      :download:`Download zipped: plot_B_divergence_free.zip <plot_B_divergence_free.zip>`
 
 
 .. only:: html

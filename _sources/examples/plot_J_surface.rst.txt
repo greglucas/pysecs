@@ -10,8 +10,8 @@
     .. note::
         :class: sphx-glr-download-link-note
 
-        Click :ref:`here <sphx_glr_download_examples_plot_J_surface.py>`
-        to download the full example code
+        :ref:`Go to the end <sphx_glr_download_examples_plot_J_surface.py>`
+        to download the full example code.
 
 .. rst-class:: sphx-glr-example-title
 
@@ -24,30 +24,34 @@ Current surfaces
 This example demonstrates the resulting current surfaces
 from the curl-free and divergence-free SEC poles.
 
-.. GENERATED FROM PYTHON SOURCE LINES 8-103
+.. GENERATED FROM PYTHON SOURCE LINES 8-111
 
 
 
-.. image:: /examples/images/sphx_glr_plot_J_surface_001.png
-    :alt: Amm and Viljanen (1999) Figure 1, Curl Free, Divergence Free
-    :class: sphx-glr-single-img
+.. image-sg:: /examples/images/sphx_glr_plot_J_surface_001.png
+   :alt: Amm and Viljanen (1999) Figure 1, Curl Free, Divergence Free
+   :srcset: /examples/images/sphx_glr_plot_J_surface_001.png
+   :class: sphx-glr-single-img
 
 
 
 
 
-.. code-block:: default
+.. code-block:: Python
+
 
     import matplotlib.pyplot as plt
-    from matplotlib.colors import LogNorm
     import numpy as np
+    from matplotlib.colors import LogNorm
+
     from pysecs import SECS
+
 
     # Radius of Earth
     R_E = 6378e3
 
     # Pole of the current system at the North Pole
-    sec_loc = np.array([90., 0., R_E + 100e3])
+    sec_loc = np.array([90.0, 0.0, R_E + 100e3])
 
     # Set up the system with a single SEC
     system_df = SECS(sec_df_loc=sec_loc)
@@ -72,8 +76,8 @@ from the curl-free and divergence-free SEC poles.
     lats = np.arange(lat_min, lat_max, delta)
     lons = np.arange(lon_min, lon_max, delta)
 
-    lats2 = np.arange(lat_min-delta/2, lat_max+delta/2, delta)
-    lons2 = np.arange(lon_min-delta/2, lon_max+delta/2, delta)
+    lats2 = np.arange(lat_min - delta / 2, lat_max + delta / 2, delta)
+    lons2 = np.arange(lon_min - delta / 2, lon_max + delta / 2, delta)
 
     nlat = len(lats)
     nlon = len(lons)
@@ -81,7 +85,7 @@ from the curl-free and divergence-free SEC poles.
     xx, yy = np.meshgrid(lons, lats)
     xx2, yy2 = np.meshgrid(lons2, lats2)
 
-    points = np.zeros((nlat*nlon, 3))
+    points = np.zeros((nlat * nlon, 3))
     points[:, 0] = yy.ravel()
     points[:, 1] = xx.ravel()
     points[:, 2] = R_E
@@ -103,62 +107,65 @@ from the curl-free and divergence-free SEC poles.
     J_cf_theta = np.linalg.norm(J_cf[:, :2], axis=1).reshape(nlat, nlon)
     J_cf_r = J_cf[:, 2].reshape(nlat, nlon)
 
-    fig, (ax_cf, ax_df) = plt.subplots(figsize=(8, 3), ncols=2,
-                                       constrained_layout=True)
-    fig.suptitle('Amm and Viljanen (1999) Figure 1')
+    fig, (ax_cf, ax_df) = plt.subplots(figsize=(8, 3), ncols=2, constrained_layout=True)
+    fig.suptitle("Amm and Viljanen (1999) Figure 1")
 
     # Limit quiver to only a few points
     nstep = 30
 
     norm = LogNorm(vmin=1e-5, vmax=1e-2)
     cax = ax_cf.pcolormesh(xx2, yy2, J_cf_theta, norm=norm)
-    ax_cf.quiver(xx[nstep//2::nstep, nstep//2::nstep*2],
-                 yy[nstep//2::nstep, nstep//2::nstep*2],
-                 J_cf_y[nstep//2::nstep, nstep//2::nstep*2],
-                 J_cf_x[nstep//2::nstep, nstep//2::nstep*2],
-                 color='w', zorder=9)
-    ax_cf.set_ylabel('Latitude (deg)')
-    ax_cf.set_xlabel('Longitude (deg)')
+    ax_cf.quiver(
+        xx[nstep // 2 :: nstep, nstep // 2 :: nstep * 2],
+        yy[nstep // 2 :: nstep, nstep // 2 :: nstep * 2],
+        J_cf_y[nstep // 2 :: nstep, nstep // 2 :: nstep * 2],
+        J_cf_x[nstep // 2 :: nstep, nstep // 2 :: nstep * 2],
+        color="w",
+        zorder=9,
+    )
+    ax_cf.set_ylabel("Latitude (deg)")
+    ax_cf.set_xlabel("Longitude (deg)")
 
     cax = ax_df.pcolormesh(xx2, yy2, J_df_phi, norm=norm)
-    ax_df.quiver(xx[nstep//2::nstep, nstep//2::nstep*2],
-                 yy[nstep//2::nstep, nstep//2::nstep*2],
-                 J_df_y[nstep//2::nstep, nstep//2::nstep*2],
-                 J_df_x[nstep//2::nstep, nstep//2::nstep*2],
-                 color='w', zorder=9)
-    ax_df.set_ylabel('Latitude (deg)')
-    ax_df.set_xlabel('Longitude (deg)')
+    ax_df.quiver(
+        xx[nstep // 2 :: nstep, nstep // 2 :: nstep * 2],
+        yy[nstep // 2 :: nstep, nstep // 2 :: nstep * 2],
+        J_df_y[nstep // 2 :: nstep, nstep // 2 :: nstep * 2],
+        J_df_x[nstep // 2 :: nstep, nstep // 2 :: nstep * 2],
+        color="w",
+        zorder=9,
+    )
+    ax_df.set_ylabel("Latitude (deg)")
+    ax_df.set_xlabel("Longitude (deg)")
 
-    ax_cf.set_title('Curl Free')
-    ax_df.set_title('Divergence Free')
+    ax_cf.set_title("Curl Free")
+    ax_df.set_title("Divergence Free")
 
     plt.show()
 
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  0.389 seconds)
+   **Total running time of the script:** (0 minutes 0.310 seconds)
 
 
 .. _sphx_glr_download_examples_plot_J_surface.py:
 
+.. only:: html
 
-.. only :: html
+  .. container:: sphx-glr-footer sphx-glr-footer-example
 
- .. container:: sphx-glr-footer
-    :class: sphx-glr-footer-example
+    .. container:: sphx-glr-download sphx-glr-download-jupyter
 
+      :download:`Download Jupyter notebook: plot_J_surface.ipynb <plot_J_surface.ipynb>`
 
+    .. container:: sphx-glr-download sphx-glr-download-python
 
-  .. container:: sphx-glr-download sphx-glr-download-python
+      :download:`Download Python source code: plot_J_surface.py <plot_J_surface.py>`
 
-     :download:`Download Python source code: plot_J_surface.py <plot_J_surface.py>`
+    .. container:: sphx-glr-download sphx-glr-download-zip
 
-
-
-  .. container:: sphx-glr-download sphx-glr-download-jupyter
-
-     :download:`Download Jupyter notebook: plot_J_surface.ipynb <plot_J_surface.ipynb>`
+      :download:`Download zipped: plot_J_surface.zip <plot_J_surface.zip>`
 
 
 .. only:: html
