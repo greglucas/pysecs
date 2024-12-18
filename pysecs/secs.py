@@ -1,3 +1,8 @@
+"""Spherical Elementary Current System (SECS) module.
+
+Calculate magnetic field transfer functions and fit a system (SECS) to observations.
+"""
+
 import numpy as np
 
 
@@ -9,69 +14,68 @@ class SECS:
 
     Parameters
     ----------
-
-    sec_df_loc : ndarray (nsec x 3 [lat, lon, r])
+    sec_df_loc : ndarray (nsec, 3 [lat, lon, r])
         The latitude, longiutde, and radius of the divergence free (df) SEC locations.
 
-    sec_cf_loc : ndarray (nsec x 3 [lat, lon, r])
+    sec_cf_loc : ndarray (nsec, 3 [lat, lon, r])
         The latitude, longiutde, and radius of the curl free (cf) SEC locations.
 
     References
     ----------
-    .. [1] Amm, O., and A. Viljanen. "Ionospheric disturbance magnetic field continuation
-           from the ground to the ionosphere using spherical elementary current systems."
-           Earth, Planets and Space 51.6 (1999): 431-440. doi:10.1186/BF03352247
+    .. [1] Amm, O., and A. Viljanen. "Ionospheric disturbance magnetic field
+        continuation from the ground to the ionosphere using spherical elementary
+        current systems." Earth, Planets and Space 51.6 (1999): 431-440.
+        doi:10.1186/BF03352247
     """
 
-    def __init__(self, sec_df_loc=None, sec_cf_loc=None):
-
+    def __init__(
+        self, sec_df_loc: np.ndarray | None = None, sec_cf_loc: np.ndarray | None = None
+    ) -> None:
         if sec_df_loc is None and sec_cf_loc is None:
-            raise ValueError("Must initialize the object with SEC locations")
+            raise ValueError("Must specify at least one of sec_df_loc of sec_cf_loc")
 
-        self.sec_df_loc = sec_df_loc
-        self.sec_cf_loc = sec_cf_loc
+        if sec_df_loc is None:
+            sec_df_loc = np.empty((0, 3))
+        # Convert to array if not already and
+        # add an empty dimension if only one SEC location is passed in
+        self.sec_df_loc = np.atleast_2d(sec_df_loc)
+        if self.sec_df_loc.shape[-1] != 3:
+            raise ValueError("SEC DF locations must have 3 columns (lat, lon, r)")
 
-        if self.sec_df_loc is not None:
-            self.sec_df_loc = np.asarray(sec_df_loc)
-            if self.sec_df_loc.shape[-1] != 3:
-                raise ValueError("SEC DF locations must have 3 columns (lat, lon, r)")
-            if self.sec_df_loc.ndim == 1:
-                # Add an empty dimension if only one SEC location is passed in
-                self.sec_df_loc = self.sec_df_loc[np.newaxis, ...]
-
-        if self.sec_cf_loc is not None:
-            self.sec_cf_loc = np.asarray(sec_cf_loc)
-            if self.sec_cf_loc.shape[-1] != 3:
-                raise ValueError("SEC CF locations must have 3 columns (lat, lon, r)")
-            if self.sec_cf_loc.ndim == 1:
-                # Add an empty dimension if only one SEC location is passed in
-                self.sec_cf_loc = self.sec_cf_loc[np.newaxis, ...]
+        if sec_cf_loc is None:
+            sec_cf_loc = np.empty((0, 3))
+        # Convert to array if not already and
+        # add an empty dimension if only one SEC location is passed in
+        self.sec_cf_loc = np.atleast_2d(sec_cf_loc)
+        if self.sec_cf_loc.shape[-1] != 3:
+            raise ValueError("SEC CF locations must have 3 columns (lat, lon, r)")
 
         # Storage of the scaling factors
-        self.sec_amps = None
-        self.sec_amps_var = None
+        self.sec_amps = np.empty((0, self.nsec))
+        self.sec_amps_var = np.empty((0, self.nsec))
 
     @property
-    def has_df(self):
+    def has_df(self) -> bool:
         """Whether this system has any divergence free currents."""
-        return self.sec_df_loc is not None
+        return len(self.sec_df_loc) > 0
 
     @property
-    def has_cf(self):
+    def has_cf(self) -> bool:
         """Whether this system has any curl free currents."""
-        return self.sec_cf_loc is not None
+        return len(self.sec_cf_loc) > 0
 
     @property
-    def nsec(self):
+    def nsec(self) -> int:
         """The number of elementary currents in this system."""
-        nsec = 0
-        if self.has_df:
-            nsec += len(self.sec_df_loc)
-        if self.has_cf:
-            nsec += len(self.sec_cf_loc)
-        return nsec
+        return len(self.sec_df_loc) + len(self.sec_cf_loc)
 
-    def fit(self, obs_loc, obs_B, obs_std=None, epsilon=0.05):
+    def fit(
+        self,
+        obs_loc: np.ndarray,
+        obs_B: np.ndarray,
+        obs_std: np.ndarray | None = None,
+        epsilon: float = 0.05,
+    ) -> "SECS":
         """Fits the SECS to the given observations.
 
         Given a number of observation locations and measurements,
@@ -81,18 +85,18 @@ class SECS:
 
         Parameters
         ----------
-        obs_locs : ndarray (nobs x 3 [lat, lon, r])
+        obs_locs : ndarray (nobs, 3 [lat, lon, r])
             Contains latitude, longitude, and radius of the observation locations
             (place where the measurements are made)
 
-        obs_B: ndarray (ntimes x nobs x 3 [Bx, By, Bz])
+        obs_B: ndarray (ntimes, nobs, 3 [Bx, By, Bz])
             An array containing the measured/observed B-fields.
 
-        obs_std : ndarray (ntimes x nobs x 3 [varX, varY, varZ]), optional
-            Standard error of vector components at each observation location. 
+        obs_std : ndarray (ntimes, nobs, 3 [varX, varY, varZ]), optional
+            Standard error of vector components at each observation location.
             This can be used to weight different observations more/less heavily.
             An infinite value eliminates the observation from the fit.
-            Default: ones(nobs x 3) equal weights
+            Default: ones(nobs, 3) equal weights
 
         epsilon : float
             Value used to regularize/smooth the SECS amplitudes. Multiplied by the
@@ -121,18 +125,17 @@ class SECS:
 
         # Calculate the singular value decomposition (SVD)
         # NOTE: T_obs has shape (nobs, 3, nsec), we reshape it
-        # to (nobs*3, nsec); obs_std has shape (ntimes, nobs, 3), 
+        # to (nobs*3, nsec); obs_std has shape (ntimes, nobs, 3),
         # we reshape it to (ntimes, nobs*3), then loop over ntimes
-        # to solve using (potentially) time-dependent observation 
+        # to solve using (potentially) time-dependent observation
         # standard errors to weight the observations
         for i in range(ntimes):
-            
             # Only (re-)calculate SVD when necessary
-            if i == 0 or not np.all(obs_std[i] == obs_std[i-1]):
-
+            if i == 0 or not np.all(obs_std[i] == obs_std[i - 1]):
                 # Weight T_obs with obs_std
-                svd_in = (T_obs.reshape(-1, self.nsec) /
-                          obs_std[i].ravel()[:, np.newaxis])
+                svd_in = (
+                    T_obs.reshape(-1, self.nsec) / obs_std[i].ravel()[:, np.newaxis]
+                )
 
                 # Find singular value decompostion
                 U, S, Vh = np.linalg.svd(svd_in, full_matrices=False)
@@ -141,31 +144,31 @@ class SECS:
                 # reciprocal to zero (setting S to infinity firsts avoids
                 #  divide-by-zero warings)
                 S[S < epsilon * S.max()] = np.inf
-                W = 1./S
+                W = 1.0 / S
 
                 # Update VWU if obs_std changed
                 VWU = Vh.T @ (np.diag(W) @ U.T)
 
             # Solve for SEC amplitudes and error variances
-            # shape: ntimes x nsec
+            # shape: (ntimes, nsec)
             self.sec_amps[i, :] = (VWU @ (obs_B[i] / obs_std[i]).reshape(-1).T).T
 
             # Maybe we want the variance of the predictions sometime later...?
-            # shape: ntimes x nsec
+            # shape: (ntimes, nsec)
             valid = np.isfinite(obs_std[i].reshape(-1))
             self.sec_amps_var[i, :] = np.sum(
-                (VWU[:,valid] * obs_std[i].reshape(-1)[valid])**2,
-                axis=1)
+                (VWU[:, valid] * obs_std[i].reshape(-1)[valid]) ** 2, axis=1
+            )
 
         return self
 
-    def fit_unit_currents(self):
-        """Sets all SECs to a unit current amplitude."""
+    def fit_unit_currents(self) -> "SECS":
+        """Set all SECs to a unit current amplitude."""
         self.sec_amps = np.ones((1, self.nsec))
 
         return self
 
-    def predict(self, pred_loc, J=False):
+    def predict(self, pred_loc: np.ndarray, J: bool = False) -> np.ndarray:
         """Calculate the predicted magnetic field or currents.
 
         After a set of observations has been fit to this system we can
@@ -174,7 +177,7 @@ class SECS:
 
         Parameters
         ----------
-        pred_loc: ndarray (npred x 3 [lat, lon, r])
+        pred_loc: ndarray (npred, 3 [lat, lon, r])
             An array containing the locations where the predictions are desired.
 
         J: boolean
@@ -183,19 +186,21 @@ class SECS:
 
         Returns
         -------
-        ndarray (ntimes x npred x 3 [lat, lon, r])
+        ndarray (ntimes, npred, 3 [lat, lon, r])
             The predicted values calculated from the current amplitudes that were
             fit to this system.
         """
         if pred_loc.shape[-1] != 3:
             raise ValueError("Prediction locations must have 3 columns (lat, lon, r)")
 
-        if self.sec_amps is None:
-            raise ValueError("There are no currents associated with the SECs," +
-                             "you need to call .fit() first to fit to some observations.")
+        if len(self.sec_amps) == 0:
+            raise ValueError(
+                "There are no currents associated with the SECs, you need"
+                "to call .fit() first to fit to some observations."
+            )
 
-        # T_pred shape=(npred x 3 x nsec)
-        # sec_amps shape=(nsec x ntimes)
+        # T_pred shape: (npred, 3, nsec)
+        # sec_amps shape: (ntimes, nsec)
         if J:
             # Predicting currents
             T_pred = self._calc_J(pred_loc)
@@ -207,11 +212,11 @@ class SECS:
         #       Therefore this is implemented as tensordot, and the arguments are
         #       arranged to eliminate needs of transposing things later.
         #       The dot product is done over the SEC locations, so the final output
-        #       is of shape: (ntimes x npred x 3)
+        #       is of shape: (ntimes, npred, 3)
 
         return np.squeeze(np.tensordot(self.sec_amps, T_pred, (1, 2)))
 
-    def predict_B(self, pred_loc):
+    def predict_B(self, pred_loc: np.ndarray) -> np.ndarray:
         """Calculate the predicted magnetic fields.
 
         After a set of observations has been fit to this system we can
@@ -220,18 +225,18 @@ class SECS:
 
         Parameters
         ----------
-        pred_loc: ndarray (npred x 3 [lat, lon, r])
+        pred_loc: ndarray (npred, 3 [lat, lon, r])
             An array containing the locations where the predictions are desired.
 
         Returns
         -------
-        ndarray (ntimes x npred x 3 [lat, lon, r])
+        ndarray (ntimes, npred, 3 [lat, lon, r])
             The predicted values calculated from the current amplitudes that were
             fit to this system.
         """
         return self.predict(pred_loc)
 
-    def predict_J(self, pred_loc):
+    def predict_J(self, pred_loc: np.ndarray) -> np.ndarray:
         """Calculate the predicted currents.
 
         After a set of observations has been fit to this system we can
@@ -240,19 +245,19 @@ class SECS:
 
         Parameters
         ----------
-        pred_loc: ndarray (npred x 3 [lat, lon, r])
+        pred_loc: ndarray (npred, 3 [lat, lon, r])
             An array containing the locations where the predictions are desired.
 
         Returns
         -------
-        ndarray (ntimes x npred x 3 [lat, lon, r])
+        ndarray (ntimes, npred, 3 [lat, lon, r])
             The predicted values calculated from the current amplitudes that were
             fit to this system.
         """
         return self.predict(pred_loc, J=True)
 
-    def _calc_T(self, obs_loc):
-        """Calculates the T transfer matrix.
+    def _calc_T(self, obs_loc: np.ndarray) -> np.ndarray:
+        """Calculate the T transfer matrix.
 
         The magnetic field transfer matrix to go from SEC locations to observation
         locations. It assumes unit current amplitudes that will then be
@@ -271,8 +276,8 @@ class SECS:
 
         return T
 
-    def _calc_J(self, obs_loc):
-        """Calculates the J transfer matrix.
+    def _calc_J(self, obs_loc: np.ndarray) -> np.ndarray:
+        """Calculate the J transfer matrix.
 
         The current transfer matrix to go from SEC locations to observation
         locations. It assumes unit current amplitudes that will then be
@@ -292,8 +297,8 @@ class SECS:
         return J
 
 
-def T_df(obs_loc, sec_loc):
-    """Calculates the divergence free magnetic field transfer function.
+def T_df(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
+    """Calculate the divergence free magnetic field transfer function.
 
     The transfer function goes from SEC location to observation location
     and assumes unit current SECs at the given locations.
@@ -321,25 +326,26 @@ def T_df(obs_loc, sec_loc):
     alpha = calc_bearing(obs_loc[:, :2], sec_loc[:, :2])
 
     # magnetic permeability
-    mu0 = 4*np.pi*1e-7
+    mu0 = 4 * np.pi * 1e-7
 
     # simplify calculations by storing this ratio
-    x = obs_r/sec_r
+    x = obs_r / sec_r
 
     sin_theta = np.sin(theta)
     cos_theta = np.cos(theta)
-    factor = 1./np.sqrt(1 - 2*x*cos_theta + x**2)
+    factor = 1.0 / np.sqrt(1 - 2 * x * cos_theta + x**2)
 
     # Amm & Viljanen: Equation 9
-    Br = mu0/(4*np.pi*obs_r) * (factor - 1)
+    Br = mu0 / (4 * np.pi * obs_r) * (factor - 1)
 
     # Amm & Viljanen: Equation 10 (transformed to try and eliminate trig operations and
     #                              divide by zeros)
-    Btheta = -mu0/(4*np.pi*obs_r) * (factor*(x - cos_theta) + cos_theta)
+    Btheta = -mu0 / (4 * np.pi * obs_r) * (factor * (x - cos_theta) + cos_theta)
     # If sin(theta) == 0: Btheta = 0
     # There is a possible 0/0 in the expansion when sec_loc == obs_loc
-    Btheta = np.divide(Btheta, sin_theta, out=np.zeros_like(sin_theta),
-                       where=sin_theta != 0)
+    Btheta = np.divide(
+        Btheta, sin_theta, out=np.zeros_like(sin_theta), where=sin_theta != 0
+    )
 
     # When observation points radii are outside of the sec locations
     under_locs = sec_r < obs_r
@@ -350,18 +356,29 @@ def T_df(obs_loc, sec_loc):
     #       except for very large matrices.
     if np.any(under_locs):
         # Flipped from previous case
-        x = sec_r/obs_r
+        x = sec_r / obs_r
 
         # Amm & Viljanen: Equation A.7
-        Br2 = mu0*x/(4*np.pi*obs_r) * (1./np.sqrt(1 - 2*x*cos_theta + x**2) - 1)
+        Br2 = (
+            mu0
+            * x
+            / (4 * np.pi * obs_r)
+            * (1.0 / np.sqrt(1 - 2 * x * cos_theta + x**2) - 1)
+        )
 
         # Amm & Viljanen: Equation A.8
-        Btheta2 = - mu0 / (4*np.pi*obs_r) * ((obs_r-sec_r*cos_theta) /
-                                             np.sqrt(obs_r**2 -
-                                                     2*obs_r*sec_r*cos_theta +
-                                                     sec_r**2) - 1)
-        Btheta2 = np.divide(Btheta2, sin_theta, out=np.zeros_like(sin_theta),
-                            where=sin_theta != 0)
+        Btheta2 = (
+            -mu0
+            / (4 * np.pi * obs_r)
+            * (
+                (obs_r - sec_r * cos_theta)
+                / np.sqrt(obs_r**2 - 2 * obs_r * sec_r * cos_theta + sec_r**2)
+                - 1
+            )
+        )
+        Btheta2 = np.divide(
+            Btheta2, sin_theta, out=np.zeros_like(sin_theta), where=sin_theta != 0
+        )
 
         # Update only the locations where secs are under observations
         Btheta[under_locs] = Btheta2[under_locs]
@@ -370,15 +387,15 @@ def T_df(obs_loc, sec_loc):
     # Transform back to Bx, By, Bz at each local point
     T = np.empty((nobs, 3, nsec))
     # alpha == angle (from cartesian x-axis (By), going towards y-axis (Bx))
-    T[:, 0, :] = -Btheta*np.sin(alpha)
-    T[:, 1, :] = -Btheta*np.cos(alpha)
+    T[:, 0, :] = -Btheta * np.sin(alpha)
+    T[:, 1, :] = -Btheta * np.cos(alpha)
     T[:, 2, :] = -Br
 
     return T
 
 
-def T_cf(obs_loc, sec_loc):
-    """Calculates the curl free magnetic field transfer function.
+def T_cf(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
+    """Calculate the curl free magnetic field transfer function.
 
     The transfer function goes from SEC location to observation location
     and assumes unit current SECs at the given locations.
@@ -396,11 +413,13 @@ def T_cf(obs_loc, sec_loc):
     ndarray (nobs, 3, nsec)
         The T transfer matrix.
     """
-    raise NotImplementedError("Curl Free Magnetic Field Transfers are not implemented yet.")
+    raise NotImplementedError(
+        "Curl Free Magnetic Field Transfers " "are not implemented yet."
+    )
 
 
-def J_df(obs_loc, sec_loc):
-    """Calculates the divergence free current density transfer function.
+def J_df(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
+    """Calculate the divergence free current density transfer function.
 
     The transfer function goes from SEC location to observation location
     and assumes unit current SECs at the given locations.
@@ -429,26 +448,30 @@ def J_df(obs_loc, sec_loc):
     alpha = calc_bearing(obs_loc[:, :2], sec_loc[:, :2])
 
     # Amm & Viljanen: Equation 6
-    tan_theta2 = np.tan(theta/2.)
+    tan_theta2 = np.tan(theta / 2.0)
 
-    J_phi = 1./(4*np.pi*sec_r)
-    J_phi = np.divide(J_phi, tan_theta2, out=np.ones_like(tan_theta2)*np.inf,
-                      where=tan_theta2 != 0.)
+    J_phi = 1.0 / (4 * np.pi * sec_r)
+    J_phi = np.divide(
+        J_phi,
+        tan_theta2,
+        out=np.ones_like(tan_theta2) * np.inf,
+        where=tan_theta2 != 0.0,
+    )
     # Only valid on the SEC shell
-    J_phi[sec_r != obs_r] = 0.
+    J_phi[sec_r != obs_r] = 0.0
 
     # Transform back to Bx, By, Bz at each local point
     J = np.empty((nobs, 3, nsec))
     # alpha == angle (from cartesian x-axis (By), going towards y-axis (Bx))
-    J[:, 0, :] = -J_phi*np.cos(alpha)
-    J[:, 1, :] = J_phi*np.sin(alpha)
-    J[:, 2, :] = 0.
+    J[:, 0, :] = -J_phi * np.cos(alpha)
+    J[:, 1, :] = J_phi * np.sin(alpha)
+    J[:, 2, :] = 0.0
 
     return J
 
 
-def J_cf(obs_loc, sec_loc):
-    """Calculates the curl free magnetic field transfer function.
+def J_cf(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
+    """Calculate the curl free magnetic field transfer function.
 
     The transfer function goes from SEC location to observation location
     and assumes unit current SECs at the given locations.
@@ -476,32 +499,36 @@ def J_cf(obs_loc, sec_loc):
     alpha = calc_bearing(obs_loc[:, :2], sec_loc[:, :2])
 
     # Amm & Viljanen: Equation 7
-    tan_theta2 = np.tan(theta/2.)
+    tan_theta2 = np.tan(theta / 2.0)
 
-    J_theta = 1./(4*np.pi*sec_r)
-    J_theta = np.divide(J_theta, tan_theta2, out=np.ones_like(tan_theta2)*np.inf,
-                        where=tan_theta2 != 0)
+    J_theta = 1.0 / (4 * np.pi * sec_r)
+    J_theta = np.divide(
+        J_theta,
+        tan_theta2,
+        out=np.ones_like(tan_theta2) * np.inf,
+        where=tan_theta2 != 0,
+    )
     # Uniformly directed FACs around the globe, except the pole
     # Integrated over the globe, this will lead to zero
-    J_r = -np.ones(J_theta.shape)/(4*np.pi*sec_r**2)
-    J_r[theta == 0.] = 1.
+    J_r = -np.ones(J_theta.shape) / (4 * np.pi * sec_r**2)
+    J_r[theta == 0.0] = 1.0
 
     # Only valid on the SEC shell
-    J_theta[sec_r != obs_r] = 0.
-    J_r[sec_r != obs_r] = 0.
+    J_theta[sec_r != obs_r] = 0.0
+    J_r[sec_r != obs_r] = 0.0
 
     # Transform back to Bx, By, Bz at each local point
     J = np.empty((nobs, 3, nsec))
     # alpha == angle (from cartesian x-axis (By), going towards y-axis (Bx))
 
-    J[:, 0, :] = -J_theta*np.sin(alpha)
-    J[:, 1, :] = -J_theta*np.cos(alpha)
+    J[:, 0, :] = -J_theta * np.sin(alpha)
+    J[:, 1, :] = -J_theta * np.cos(alpha)
     J[:, 2, :] = -J_r
 
     return J
 
 
-def calc_angular_distance(latlon1, latlon2):
+def calc_angular_distance(latlon1: np.ndarray, latlon2: np.ndarray) -> np.ndarray:
     """Calculate the angular distance between a set of points.
 
     This function calculates the angular distance in radians
@@ -509,15 +536,15 @@ def calc_angular_distance(latlon1, latlon2):
 
     Parameters
     ----------
-    latlon1 : ndarray (n x 2 [lat, lon])
+    latlon1 : ndarray (n, 2 [lat, lon])
         An array of n (latitude, longitude) points.
 
-    latlon2 : ndarray (m x 2 [lat, lon])
+    latlon2 : ndarray (m, 2 [lat, lon])
         An array of m (latitude, longitude) points.
 
     Returns
     -------
-    ndarray (n x m)
+    ndarray (n, m)
         The array of distances between the input arrays.
     """
     lat1 = np.deg2rad(latlon1[:, 0])[:, np.newaxis]
@@ -528,12 +555,13 @@ def calc_angular_distance(latlon1, latlon2):
     dlon = lon2 - lon1
 
     # theta == angular distance between two points
-    theta = np.arccos(np.sin(lat1)*np.sin(lat2) +
-                      np.cos(lat1)*np.cos(lat2)*np.cos(dlon))
+    theta = np.arccos(
+        np.sin(lat1) * np.sin(lat2) + np.cos(lat1) * np.cos(lat2) * np.cos(dlon)
+    )
     return theta
 
 
-def calc_bearing(latlon1, latlon2):
+def calc_bearing(latlon1: np.ndarray, latlon2: np.ndarray) -> np.ndarray:
     """Calculate the bearing (direction) between a set of points.
 
     This function calculates the bearing in radians
@@ -543,15 +571,15 @@ def calc_bearing(latlon1, latlon2):
 
     Parameters
     ----------
-    latlon1 : ndarray (n x 2 [lat, lon])
+    latlon1 : ndarray (n, 2 [lat, lon])
         An array of n (latitude, longitude) points.
 
-    latlon2 : ndarray (m x 2 [lat, lon])
+    latlon2 : ndarray (m, 2 [lat, lon])
         An array of m (latitude, longitude) points.
 
     Returns
     -------
-    ndarray (n x m)
+    ndarray (n, m)
         The array of bearings between the input arrays.
     """
     lat1 = np.deg2rad(latlon1[:, 0])[:, np.newaxis]
@@ -568,7 +596,8 @@ def calc_bearing(latlon1, latlon2):
     # SEC coordinates are: theta (colatitude (+ away from North Pole)),
     #                      phi (longitude, + east), r (+ out)
     # Obs coordinates are: X (+ north), Y (+ east), Z (+ down)
-    alpha = np.pi/2 - np.arctan2(np.sin(dlon)*np.cos(lat2),
-                                 np.cos(lat1)*np.sin(lat2) -
-                                 np.sin(lat1)*np.cos(lat2)*np.cos(dlon))
+    alpha = np.pi / 2 - np.arctan2(
+        np.sin(dlon) * np.cos(lat2),
+        np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(dlon),
+    )
     return alpha

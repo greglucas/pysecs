@@ -1,0 +1,89 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+    "setuptools>=42",
+    "setuptools_scm>=7",
+]
+
+[project]
+name = "pysecs"
+dynamic = ["version"]
+description = "Spherical Elementary Current System (SECS) Calculations."
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["Spherical Elementary Current Systems", "SECS", "Ionosphere", "Atmosphere", "Geomagnetic"]
+authors = [{name = "Greg Lucas", email = "greg.m.lucas@gmail.com"}]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development",
+    "Topic :: Scientific/Engineering",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+]
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.23"]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+]
+doc = [
+    "matplotlib",
+    "sphinx",
+    "sphinx_gallery",
+    "pydata-sphinx-theme",
+]
+dev = [
+    "pysecs[doc,test]",
+    "mypy",
+    "pre-commit",
+    "ruff",
+]
+
+[project.urls]
+homepage = "https://greglucas.github.io/pysecs/"
+repository = "https://github.com/greglucas/pysecs"
+
+[tool.setuptools_scm]
+version_scheme = "release-branch-semver"
+local_scheme = "node-and-date"
+parentdir_prefix_version = "pysecs-"
+fallback_version = "0.0+UNKNOWN"
+
+[tool.pytest.ini_options]
+junit_family = "xunit2"
+testpaths = [
+  "tests",
+]
+addopts = [
+    "--import-mode=importlib",
+    "--cov",
+]
+
+[tool.ruff]
+target-version = "py310"
+lint.select = ["B", "D", "E", "F", "I", "N", "S", "W", "PL", "PT", "UP", "RUF", "ANN"]
+lint.ignore = ["B028", "D203", "D212", "N802", "N803", "N806", "PLR0913", "PLR2004", "S310"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN", "D", "S"]
+"examples/*" = ["ANN", "D", "S"]
+"docs/source/*" = ["ANN", "D", "S"]
+".github/*" = ["S"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
