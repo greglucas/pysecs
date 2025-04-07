@@ -414,7 +414,7 @@ def T_cf(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
         The T transfer matrix.
     """
     raise NotImplementedError(
-        "Curl Free Magnetic Field Transfers " "are not implemented yet."
+        "Curl Free Magnetic Field Transfers are not implemented yet."
     )
 
 
