@@ -75,6 +75,7 @@ class SECS:
         obs_B: np.ndarray,
         obs_std: np.ndarray | None = None,
         epsilon: float = 0.05,
+        mode: str = "relative",
     ) -> "SECS":
         """Fits the SECS to the given observations.
 
@@ -99,9 +100,19 @@ class SECS:
             Default: ones(nobs, 3) equal weights
 
         epsilon : float
-            Value used to regularize/smooth the SECS amplitudes. Multiplied by the
-            largest singular value obtained from SVD.
+            Value used to regularize/smooth the SECS amplitudes. Epsilon  has
+            different meanings depending on the mode used, described in that
+            parameter section. Must be between 0 and 1. A higher number
+            produces a more regularized (smoother) solution.
             Default: 0.05
+
+        mode : str
+            The mode used to filter the singular values. Options are:
+            - 'relative': filter singular values that are less than epsilon times
+              the largest singular value, keep [S >= epsilon * S.max()].
+            - 'variance': filter singular values that contribute to 1-epsilon of
+              the total energy of the system (% total variance as a ratio).
+            Default: 'relative'
         """
         if obs_loc.shape[-1] != 3:
             raise ValueError("Observation locations must have 3 columns (lat, lon, r)")
@@ -140,13 +151,24 @@ class SECS:
                 # Find singular value decompostion
                 U, S, Vh = np.linalg.svd(svd_in, full_matrices=False)
 
-                # Eliminate singular values less than epsilon by setting their
-                # reciprocal to zero (setting S to infinity firsts avoids
-                #  divide-by-zero warings)
-                S[S < epsilon * S.max()] = np.inf
-                W = 1.0 / S
+                if mode == "relative":
+                    valid = S >= epsilon * S.max()
+                elif mode == "variance":
+                    cumulative_energy = np.cumsum(S**2)
+                    total_energy = cumulative_energy[-1]
+                    energy_ratio = cumulative_energy / total_energy
+                    n_components = np.searchsorted(energy_ratio, 1 - epsilon) + 1
+                    valid = np.arange(len(S)) < n_components
+                else:
+                    raise ValueError(f"Unknown SVD filtering mode: '{mode}'")
 
-                # Update VWU if obs_std changed
+                # Apply truncation
+                U = U[:, valid]
+                S = S[valid]
+                Vh = Vh[valid, :]
+
+                # Compute VWU
+                W = 1.0 / S
                 VWU = Vh.T @ (np.diag(W) @ U.T)
 
             # Solve for SEC amplitudes and error variances
