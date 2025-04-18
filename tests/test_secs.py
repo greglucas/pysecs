@@ -362,7 +362,7 @@ def test_fit_one_time():
     )
     obs_loc = np.array([[0, 0, R_EARTH]])
     obs_B = np.array([[1, 1, 1]])
-    secs.fit(obs_loc, obs_B)
+    secs.fit(obs_loc, obs_B, epsilon=0)
     assert_allclose([[6.40594202e13, -7.41421248e13]], secs.sec_amps)
 
 
@@ -374,7 +374,7 @@ def test_fit_multi_time():
     obs_loc = np.array([[0, 0, R_EARTH]])
     obs_B = np.ones((2, 1, 3))
     obs_B[1, :, :] *= 2
-    secs.fit(obs_loc, obs_B)
+    secs.fit(obs_loc, obs_B, epsilon=0)
     arr = np.array([6.40594202e13, -7.41421248e13])
     expected = np.array([arr, 2 * arr])
     assert_allclose(expected, secs.sec_amps)
@@ -396,7 +396,8 @@ def test_fit_obs_std():
     assert_allclose(expected, secs.sec_amps, rtol=1e-6)
 
 
-def test_fit_epsilon():
+@pytest.mark.parametrize("mode", ["relative", "variance"])
+def test_fit_epsilon(mode):
     """Test that epsilon removes some components."""
     secs = pysecs.SECS(
         sec_df_loc=[[1.0, 0.0, R_EARTH + 1e6], [-1.0, 0.0, R_EARTH + 1e6]]
@@ -407,9 +408,19 @@ def test_fit_epsilon():
     obs_std = np.ones(obs_B.shape)
     # Remove the z component from the fit of the second timestep
     obs_std[1, :, 2] = np.inf
-    secs.fit(obs_loc, obs_B, obs_std=obs_std, epsilon=0.8)
+    secs.fit(obs_loc, obs_B, obs_std=obs_std, epsilon=0.8, mode=mode)
     expected = np.array([[-5.041352e12, -5.041352e12], [1.382015e14, -1.382015e14]])
     assert_allclose(expected, secs.sec_amps, rtol=1e-6)
+
+
+def test_bad_mode():
+    """Test bad input to fit."""
+    secs = pysecs.SECS(sec_df_loc=[[1.0, 0.0, R_EARTH + 1e6]])
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((2, 1, 3))
+    obs_B[1, :, :] *= 2
+    with pytest.raises(ValueError, match="Unknown SVD filtering mode"):
+        secs.fit(obs_loc, obs_B, epsilon=0.8, mode="bad_mode")
 
 
 def test_bad_predict():
@@ -446,7 +457,7 @@ def test_predictB():
     obs_loc = np.array([[0, 0, R_EARTH]])
     obs_B = np.ones((2, 1, 3))
     obs_B[1, :, :] *= 2
-    secs.fit(obs_loc, obs_B)
+    secs.fit(obs_loc, obs_B, epsilon=0)
 
     # Predict at the same observatory location
     B_pred = secs.predict(obs_loc)
@@ -473,7 +484,7 @@ def test_predictJ():
     obs_loc = np.array([[0, 0, R_EARTH]])
     obs_B = np.ones((2, 1, 3))
     obs_B[1, :, :] *= 2
-    secs.fit(obs_loc, obs_B)
+    secs.fit(obs_loc, obs_B, epsilon=0)
 
     # Currents only on the SECS surface
     J_pred = secs.predict(obs_loc, J=True)
