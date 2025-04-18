@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+title: pysecs
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Greg
+    family-names: Lucas
+    email: greg.lucas@lasp.colorado.edu
+    affiliation: >-
+      University of Colorado Laboratory for      
+      Atmospheric and Space Physics (LASP)
+    orcid: 'https://orcid.org/0000-0003-1331-1863'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.14511595
+    description: DOI for all versions of the software
+license: MIT
