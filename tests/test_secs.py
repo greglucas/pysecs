@@ -3,6 +3,7 @@ import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
 import pysecs
+from pysecs.secs import _calc_angular_distance_and_bearing
 
 
 R_EARTH = 6378e3
@@ -28,6 +29,17 @@ def test_bearing():
         pysecs.calc_bearing(latlon1, latlon2),
         np.deg2rad([[0.0, 90.0, 90.0, 180.0, -90]]),
     )
+
+
+def test_distance_and_bearing():
+    "Test the combined function."
+    latlon1 = np.array([[0.0, 0.0]])
+    latlon2 = np.array(
+        [[0.0, 90.0], [90.0, 0.0], [90.0, 45.0], [0.0, -90.0], [-90, 0.0]]
+    )
+    theta, alpha = _calc_angular_distance_and_bearing(latlon1, latlon2)
+    assert_array_equal(theta, pysecs.calc_angular_distance(latlon1, latlon2))
+    assert_array_equal(alpha, pysecs.calc_bearing(latlon1, latlon2))
 
 
 def test_divergence_free_magnetic_directions():
