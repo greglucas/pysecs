@@ -54,6 +54,14 @@ class SECS:
         self.sec_amps = np.empty((0, self.nsec))
         self.sec_amps_var = np.empty((0, self.nsec))
 
+        # Keep some values around for cache lookups
+        self._obs_loc = None
+        self._T_obs_flat = None
+        self._pred_loc_B = None
+        self._T_pred_B = None
+        self._pred_loc_J = None
+        self._T_pred_J = None
+
     @property
     def has_df(self) -> bool:
         """Whether this system has any divergence free currents."""
@@ -68,6 +76,58 @@ class SECS:
     def nsec(self) -> int:
         """The number of elementary currents in this system."""
         return len(self.sec_df_loc) + len(self.sec_cf_loc)
+
+    @staticmethod
+    def _compute_VWU(
+        T_obs_flat: np.ndarray, std_flat: np.ndarray, epsilon: float, mode: str
+    ) -> np.ndarray:
+        """Compute the VWU matrix from the SVD of the transfer function.
+
+        This function computes the VWU matrix from the SVD of the transfer function
+        and filters the singular values based on the specified mode. It is broken out
+        to allow for easier branching logic in the fit() function.
+
+        Parameters
+        ----------
+        T_obs_flat : ndarray
+            The flattened transfer function matrix.
+        std_flat : ndarray
+            The flattened standard deviation matrix.
+        epsilon : float
+            The threshold for filtering singular values.
+        mode : str
+            The mode for filtering singular values.
+            Options are 'relative' or 'variance'.
+
+        Returns
+        -------
+        ndarray
+            The VWU matrix.
+        """
+        # Weight the design matrix
+        weighted_T = T_obs_flat / std_flat[:, np.newaxis]
+
+        # SVD
+        U, S, Vh = np.linalg.svd(weighted_T, full_matrices=False)
+
+        # Filter components
+        if mode == "relative":
+            valid = S >= epsilon * S.max()
+        elif mode == "variance":
+            energy = np.cumsum(S**2)
+            total = energy[-1]
+            threshold = np.searchsorted(energy / total, 1 - epsilon) + 1
+            valid = np.arange(len(S)) < threshold
+        else:
+            raise ValueError(f"Unknown SVD filtering mode: '{mode}'")
+
+        # Truncate and build VWU
+        U = U[:, valid]
+        S = S[valid]
+        Vh = Vh[valid, :]
+        W = 1.0 / S
+
+        return Vh.T @ (np.diag(W) @ U.T)
 
     def fit(
         self,
@@ -123,65 +183,50 @@ class SECS:
 
         # Assume unit standard error of all measurements
         if obs_std is None:
-            obs_std = np.ones(obs_B.shape)
+            obs_std = np.ones_like(obs_B)
 
         ntimes = len(obs_B)
+        # Flatten the components to do the math with shape (ntimes, nvariables)
+        obs_B_flat = obs_B.reshape(ntimes, -1)
+        obs_std_flat = obs_std.reshape(ntimes, -1)
 
-        # Calculate the transfer functions
-        T_obs = self._calc_T(obs_loc)
+        # Calculate the transfer functions, using cached values if possible
+        if not np.array_equal(obs_loc, self._obs_loc):
+            self._T_obs_flat = self._calc_T(obs_loc).reshape(-1, self.nsec)
+            self._obs_loc = obs_loc
 
         # Store the fit sec_amps in the object
         self.sec_amps = np.empty((ntimes, self.nsec))
         self.sec_amps_var = np.empty((ntimes, self.nsec))
 
-        # Calculate the singular value decomposition (SVD)
-        # NOTE: T_obs has shape (nobs, 3, nsec), we reshape it
-        # to (nobs*3, nsec); obs_std has shape (ntimes, nobs, 3),
-        # we reshape it to (ntimes, nobs*3), then loop over ntimes
-        # to solve using (potentially) time-dependent observation
-        # standard errors to weight the observations
-        for i in range(ntimes):
-            # Only (re-)calculate SVD when necessary
-            if i == 0 or not np.all(obs_std[i] == obs_std[i - 1]):
-                # Weight T_obs with obs_std
-                svd_in = (
-                    T_obs.reshape(-1, self.nsec) / obs_std[i].ravel()[:, np.newaxis]
-                )
+        if np.allclose(obs_std_flat, obs_std_flat[0]):
+            # The SVD is the same for all time steps, so we can calculate it once
+            # and broadcast it to all time steps avoiding the for-loop below
+            VWU = self._compute_VWU(self._T_obs_flat, obs_std_flat[0], epsilon, mode)
+            self.sec_amps[:] = (obs_B_flat / obs_std_flat) @ VWU.T
 
-                # Find singular value decompostion
-                U, S, Vh = np.linalg.svd(svd_in, full_matrices=False)
+            valid = np.isfinite(obs_std_flat[0])
+            VWU_masked = VWU[:, valid]
+            std_masked = obs_std_flat[0, valid]
+            self.sec_amps_var[:] = np.sum((VWU_masked * std_masked) ** 2, axis=1)
+        else:
+            prev_std = None
+            VWU = None
+            for i in range(ntimes):
+                if prev_std is None or not np.allclose(
+                    obs_std_flat[i], prev_std, atol=1e-12, rtol=1e-12
+                ):
+                    VWU = self._compute_VWU(
+                        self._T_obs_flat, obs_std_flat[i], epsilon, mode
+                    )
+                    prev_std = obs_std_flat[i]
 
-                if mode == "relative":
-                    valid = S >= epsilon * S.max()
-                elif mode == "variance":
-                    cumulative_energy = np.cumsum(S**2)
-                    total_energy = cumulative_energy[-1]
-                    energy_ratio = cumulative_energy / total_energy
-                    n_components = np.searchsorted(energy_ratio, 1 - epsilon) + 1
-                    valid = np.arange(len(S)) < n_components
-                else:
-                    raise ValueError(f"Unknown SVD filtering mode: '{mode}'")
+                self.sec_amps[i] = VWU @ (obs_B_flat[i] / obs_std_flat[i])
 
-                # Apply truncation
-                U = U[:, valid]
-                S = S[valid]
-                Vh = Vh[valid, :]
-
-                # Compute VWU
-                W = 1.0 / S
-                VWU = Vh.T @ (np.diag(W) @ U.T)
-
-            # Solve for SEC amplitudes and error variances
-            # shape: (ntimes, nsec)
-            self.sec_amps[i, :] = (VWU @ (obs_B[i] / obs_std[i]).reshape(-1).T).T
-
-            # Maybe we want the variance of the predictions sometime later...?
-            # shape: (ntimes, nsec)
-            valid = np.isfinite(obs_std[i].reshape(-1))
-            self.sec_amps_var[i, :] = np.sum(
-                (VWU[:, valid] * obs_std[i].reshape(-1)[valid]) ** 2, axis=1
-            )
-
+                valid = np.isfinite(obs_std_flat[i])
+                VWU_masked = VWU[:, valid]
+                std_masked = obs_std_flat[i, valid]
+                self.sec_amps_var[i] = np.sum((VWU_masked * std_masked) ** 2, axis=1)
         return self
 
     def fit_unit_currents(self) -> "SECS":
@@ -225,16 +270,16 @@ class SECS:
         # sec_amps shape: (ntimes, nsec)
         if J:
             # Predicting currents
-            T_pred = self._calc_J(pred_loc)
+            if not np.array_equal(pred_loc, self._pred_loc_J):
+                self._T_pred_J = self._calc_J(pred_loc)
+                self._pred_loc_J = pred_loc
+            T_pred = self._T_pred_J
         else:
             # Predicting magnetic fields
-            T_pred = self._calc_T(pred_loc)
-
-        # NOTE: dot product is slow on multi-dimensional arrays (i.e. > 2 dimensions)
-        #       Therefore this is implemented as tensordot, and the arguments are
-        #       arranged to eliminate needs of transposing things later.
-        #       The dot product is done over the SEC locations, so the final output
-        #       is of shape: (ntimes, npred, 3)
+            if not np.array_equal(pred_loc, self._pred_loc_B):
+                self._T_pred_B = self._calc_T(pred_loc)
+                self._pred_loc_B = pred_loc
+            T_pred = self._T_pred_B
 
         return np.squeeze(np.tensordot(self.sec_amps, T_pred, (1, 2)))
 
