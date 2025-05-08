@@ -344,8 +344,7 @@ def T_df(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
     obs_r = obs_loc[:, 2][:, np.newaxis]
     sec_r = sec_loc[:, 2][np.newaxis, :]
 
-    theta = calc_angular_distance(obs_loc[:, :2], sec_loc[:, :2])
-    alpha = calc_bearing(obs_loc[:, :2], sec_loc[:, :2])
+    theta, alpha = _calc_angular_distance_and_bearing(obs_loc[:, :2], sec_loc[:, :2])
 
     # magnetic permeability
     mu0 = 4 * np.pi * 1e-7
@@ -466,8 +465,7 @@ def J_df(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
     sec_r = sec_loc[:, 2][np.newaxis, :]
 
     # Input to the distance calculations is degrees, output is in radians
-    theta = calc_angular_distance(obs_loc[:, :2], sec_loc[:, :2])
-    alpha = calc_bearing(obs_loc[:, :2], sec_loc[:, :2])
+    theta, alpha = _calc_angular_distance_and_bearing(obs_loc[:, :2], sec_loc[:, :2])
 
     # Amm & Viljanen: Equation 6
     tan_theta2 = np.tan(theta / 2.0)
@@ -517,8 +515,7 @@ def J_cf(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
     obs_r = obs_loc[:, 2][:, np.newaxis]
     sec_r = sec_loc[:, 2][np.newaxis, :]
 
-    theta = calc_angular_distance(obs_loc[:, :2], sec_loc[:, :2])
-    alpha = calc_bearing(obs_loc[:, :2], sec_loc[:, :2])
+    theta, alpha = _calc_angular_distance_and_bearing(obs_loc[:, :2], sec_loc[:, :2])
 
     # Amm & Viljanen: Equation 7
     tan_theta2 = np.tan(theta / 2.0)
@@ -548,6 +545,64 @@ def J_cf(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
     J[:, 2, :] = -J_r
 
     return J
+
+
+def _calc_angular_distance_and_bearing(
+    latlon1: np.ndarray, latlon2: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """Calculate the angular distance and bearing between two points.
+
+    This function calculates the angular distance in radians
+    between two latitude and longitude points. It also calculates
+    the bearing (direction) from point 1 to point 2 going from the
+    cartesian x-axis towards the cartesian y-axis.
+
+    Parameters
+    ----------
+    latlon1 : ndarray of shape (N, 2)
+        Array of N (latitude, longitude) points.
+    latlon2 : ndarray of shape (M, 2)
+        Array of M (latitude, longitude) points.
+
+    Returns
+    -------
+    theta : ndarray of shape (N, M)
+        Angular distance in radians between each point in latlon1 and latlon2.
+    alpha : ndarray of shape (N, M)
+        Bearing from each point in latlon1 to each point in latlon2.
+    """
+    latlon1_rad = np.deg2rad(latlon1)
+    latlon2_rad = np.deg2rad(latlon2)
+
+    lat1 = latlon1_rad[:, 0][:, None]
+    lon1 = latlon1_rad[:, 1][:, None]
+    lat2 = latlon2_rad[:, 0][None, :]
+    lon2 = latlon2_rad[:, 1][None, :]
+
+    cos_lat1 = np.cos(lat1)
+    sin_lat1 = np.sin(lat1)
+    cos_lat2 = np.cos(lat2)
+    sin_lat2 = np.sin(lat2)
+
+    dlon = lon2 - lon1
+    cos_dlon = np.cos(dlon)
+    sin_dlon = np.sin(dlon)
+
+    # theta == angular distance between two points
+    theta = np.arccos(sin_lat1 * sin_lat2 + cos_lat1 * cos_lat2 * cos_dlon)
+
+    # alpha == bearing, going from point1 to point2
+    #          angle (from cartesian x-axis (By), going towards y-axis (Bx))
+    # Used to rotate the SEC coordinate frame into the observation coordinate
+    # frame.
+    # SEC coordinates are: theta (colatitude (+ away from North Pole)),
+    #                      phi (longitude, + east), r (+ out)
+    # Obs coordinates are: X (+ north), Y (+ east), Z (+ down)
+    x = cos_lat2 * sin_dlon
+    y = cos_lat1 * sin_lat2 - sin_lat1 * cos_lat2 * cos_dlon
+    alpha = np.pi / 2 - np.arctan2(x, y)
+
+    return theta, alpha
 
 
 def calc_angular_distance(latlon1: np.ndarray, latlon2: np.ndarray) -> np.ndarray:
