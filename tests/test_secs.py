@@ -575,3 +575,53 @@ def test_predictJ_cf_df():
 
     # Use the predict_J function call directly
     assert_allclose(secs.predict_J(pred_loc), secs.predict(pred_loc, J=True))
+
+
+def test_multidim_shapes():
+    """Test multidimensional prediction."""
+    np.random.seed(0)
+    nsec = 100
+    nobs = 10
+    ntimes = 75
+    npred = 133
+    sec_locs = np.random.rand(nsec, 3) * 100
+    obs_locs = np.random.rand(nobs, 3) * 100
+    obs_B = np.random.rand(ntimes, nobs, 3) * 10000
+    pred_locs = np.random.rand(npred, 3) * 100
+
+    secs = pysecs.SECS(sec_df_loc=sec_locs)
+    assert secs.nsec == nsec
+
+    secs.fit(obs_locs, obs_B=obs_B)
+    assert secs.sec_amps.shape == (ntimes, nsec)
+    assert secs.sec_amps_var.shape == (ntimes, nsec)
+
+    pred = secs.predict(pred_locs)
+    assert pred.shape == (ntimes, npred, 3)
+
+
+def test_changing_obs_shape():
+    # If we change the shape of the obs data, we don't want to
+    # cache the old data and use that, we want to recompute with a new shape
+    np.random.seed(0)
+    nsec = 100
+    nobs = 10
+    ntimes = 75
+    npred = 133
+    sec_locs = np.random.rand(nsec, 3) * 100
+    obs_locs = np.random.rand(nobs, 3) * 100
+    obs_B = np.random.rand(ntimes, nobs, 3) * 10000
+    pred_locs = np.random.rand(npred, 3) * 100
+
+    secs = pysecs.SECS(sec_df_loc=sec_locs)
+
+    secs.fit(obs_locs, obs_B=obs_B)
+    # Now change the shape of the obs data by removing the last observation
+    secs.fit(obs_locs[:-1], obs_B=obs_B[:, :-1, :])
+    assert secs.sec_amps.shape == (ntimes, nsec)
+    assert secs.sec_amps_var.shape == (ntimes, nsec)
+
+    pred = secs.predict(pred_locs)
+    assert pred.shape == (ntimes, npred, 3)
+    pred = secs.predict(pred_locs[:-1])
+    assert pred.shape == (ntimes, npred - 1, 3)
