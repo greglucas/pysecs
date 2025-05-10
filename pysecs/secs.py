@@ -386,69 +386,43 @@ def T_df(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
     nobs = len(obs_loc)
     nsec = len(sec_loc)
 
-    obs_r = obs_loc[:, 2][:, np.newaxis]
-    sec_r = sec_loc[:, 2][np.newaxis, :]
-
     theta, alpha = _calc_angular_distance_and_bearing(obs_loc[:, :2], sec_loc[:, :2])
-
-    # magnetic permeability
-    mu0 = 4 * np.pi * 1e-7
-
-    # simplify calculations by storing this ratio
-    x = obs_r / sec_r
 
     sin_theta = np.sin(theta)
     cos_theta = np.cos(theta)
-    factor = 1.0 / np.sqrt(1 - 2 * x * cos_theta + x**2)
 
-    # Amm & Viljanen: Equation 9
-    Br = mu0 / (4 * np.pi * obs_r) * (factor - 1)
+    Br = np.empty((nobs, nsec))
+    Btheta = np.empty((nobs, nsec))
 
-    # Amm & Viljanen: Equation 10 (transformed to try and eliminate trig operations and
-    #                              divide by zeros)
-    Btheta = -mu0 / (4 * np.pi * obs_r) * (factor * (x - cos_theta) + cos_theta)
+    # Over locations: obs_r > sec_r
+    over_locs = obs_loc[:, 2][:, np.newaxis] > sec_loc[:, 2][np.newaxis, :]
+    if np.any(over_locs):
+        # We use np.where because we are broadcasting 1d arrays
+        # over_locs is a 2d array of booleans
+        over_indices = np.where(over_locs)
+        obs_r = obs_loc[over_indices[0], 2]
+        sec_r = sec_loc[over_indices[1], 2]
+        Br[over_locs], Btheta[over_locs] = _calc_T_df_over(
+            obs_r, sec_r, cos_theta[over_locs]
+        )
+
+    # Under locations: obs_r <= sec_r
+    under_locs = ~over_locs
+    if np.any(under_locs):
+        # We use np.where because we are broadcasting 1d arrays
+        # over_locs is a 2d array of booleans
+        under_indices = np.where(under_locs)
+        obs_r = obs_loc[under_indices[0], 2]
+        sec_r = sec_loc[under_indices[1], 2]
+        Br[under_locs], Btheta[under_locs] = _calc_T_df_under(
+            obs_r, sec_r, cos_theta[under_locs]
+        )
+
     # If sin(theta) == 0: Btheta = 0
     # There is a possible 0/0 in the expansion when sec_loc == obs_loc
     Btheta = np.divide(
         Btheta, sin_theta, out=np.zeros_like(sin_theta), where=sin_theta != 0
     )
-
-    # When observation points radii are outside of the sec locations
-    under_locs = sec_r < obs_r
-
-    # NOTE: If any SECs are below observations the math will be done on all points.
-    #       This could be updated to only work on the locations where this condition
-    #       occurs, but would make the code messier, with minimal performance gain
-    #       except for very large matrices.
-    if np.any(under_locs):
-        # Flipped from previous case
-        x = sec_r / obs_r
-
-        # Amm & Viljanen: Equation A.7
-        Br2 = (
-            mu0
-            * x
-            / (4 * np.pi * obs_r)
-            * (1.0 / np.sqrt(1 - 2 * x * cos_theta + x**2) - 1)
-        )
-
-        # Amm & Viljanen: Equation A.8
-        Btheta2 = (
-            -mu0
-            / (4 * np.pi * obs_r)
-            * (
-                (obs_r - sec_r * cos_theta)
-                / np.sqrt(obs_r**2 - 2 * obs_r * sec_r * cos_theta + sec_r**2)
-                - 1
-            )
-        )
-        Btheta2 = np.divide(
-            Btheta2, sin_theta, out=np.zeros_like(sin_theta), where=sin_theta != 0
-        )
-
-        # Update only the locations where secs are under observations
-        Btheta[under_locs] = Btheta2[under_locs]
-        Br[under_locs] = Br2[under_locs]
 
     # Transform back to Bx, By, Bz at each local point
     T = np.empty((nobs, 3, nsec))
@@ -458,6 +432,48 @@ def T_df(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
     T[:, 2, :] = -Br
 
     return T
+
+
+def _calc_T_df_under(
+    obs_r: np.ndarray, sec_r: np.ndarray, cos_theta: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """T matrix for over locations (obs_r <= sec_r)."""
+    mu0_over_4pi = 1e-7
+    x = obs_r / sec_r
+    factor = 1.0 / np.sqrt(1 - 2 * x * cos_theta + x**2)
+
+    # Amm & Viljanen: Equation 9
+    Br = mu0_over_4pi / obs_r * (factor - 1)
+
+    # Amm & Viljanen: Equation 10
+    Btheta = -mu0_over_4pi / obs_r * (factor * (x - cos_theta) + cos_theta)
+
+    return Br, Btheta
+
+
+def _calc_T_df_over(
+    obs_r: np.ndarray, sec_r: np.ndarray, cos_theta: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """T matrix for over locations (obs_r > sec_r)."""
+    mu0_over_4pi = 1e-7
+    x = sec_r / obs_r
+    factor = 1.0 / np.sqrt(1 - 2 * x * cos_theta + x**2)
+
+    # Amm & Viljanen: Equation A.7
+    Br = mu0_over_4pi * x / obs_r * (factor - 1)
+
+    # Amm & Viljanen: Equation A.8
+    Btheta = (
+        -mu0_over_4pi
+        / obs_r
+        * (
+            (obs_r - sec_r * cos_theta)
+            / np.sqrt(obs_r**2 - 2 * obs_r * sec_r * cos_theta + sec_r**2)
+            - 1
+        )
+    )
+
+    return Br, Btheta
 
 
 def T_cf(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
