@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:15.547** total execution time for 3 files **from all galleries**:
+**00:15.416** total execution time for 3 files **from all galleries**:
 
 .. container::
 
@@ -33,7 +33,7 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_examples_plot_animation.py` (``../../examples/plot_animation.py``)
-     - 00:15.128
+     - 00:14.998
      - 0.0
    * - :ref:`sphx_glr_examples_plot_J_surface.py` (``../../examples/plot_J_surface.py``)
      - 00:00.293
