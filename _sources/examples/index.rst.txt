@@ -24,7 +24,7 @@ This is a collection of examples to demonstrate how to use pysecs.
   .. image:: /examples/images/thumb/sphx_glr_plot_B_divergence_free_thumb.png
     :alt:
 
-  :ref:`sphx_glr_examples_plot_B_divergence_free.py`
+  :doc:`/examples/plot_B_divergence_free`
 
 .. raw:: html
 
@@ -41,7 +41,7 @@ This is a collection of examples to demonstrate how to use pysecs.
   .. image:: /examples/images/thumb/sphx_glr_plot_J_surface_thumb.png
     :alt:
 
-  :ref:`sphx_glr_examples_plot_J_surface.py`
+  :doc:`/examples/plot_J_surface`
 
 .. raw:: html
 
@@ -58,7 +58,7 @@ This is a collection of examples to demonstrate how to use pysecs.
   .. image:: /examples/images/thumb/sphx_glr_plot_animation_thumb.gif
     :alt:
 
-  :ref:`sphx_glr_examples_plot_animation.py`
+  :doc:`/examples/plot_animation`
 
 .. raw:: html
 
