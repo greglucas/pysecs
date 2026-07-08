@@ -17,6 +17,8 @@ pysecs is an open-source library for calculating Spherical Elementary Current Sy
   (`predict(..., return_var=True)`).
 - Robust fitting (`fit(..., robust='huber'|'bisquare')`) that automatically
   downweights localized single-station disturbances.
+- Temporal estimation with `KalmanSECS`: a Kalman filter / smoother over the
+  SEC amplitudes with innovation gating for impulsive outliers.
 
 ## Examples
 

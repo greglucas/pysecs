@@ -37,6 +37,22 @@ to fit to data and then predict at any other location.
     SECS.has_cf
     SECS.nsec
 
+.. rubric:: Temporal estimation
+
+The KalmanSECS class couples time steps together with a state-space
+model on the SEC amplitudes, estimated with a Kalman filter and
+Rauch-Tung-Striebel smoother.
+
+.. autosummary::
+    :toctree: generated/
+
+    KalmanSECS
+    KalmanSECS.fit
+    KalmanSECS.predict
+    KalmanSECS.predict_B
+    KalmanSECS.predict_J
+
+
 .. rubric:: Additional functions
 
 The helper functions create the geometrical transforms going from

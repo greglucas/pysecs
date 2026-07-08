@@ -82,6 +82,11 @@ class KalmanSECS:
 
     Notes
     -----
+    The forward pass is the classic Kalman filter [1]_ and the backward
+    pass the Rauch-Tung-Striebel smoother [2]_; the temporal
+    regularization approach follows the strategies reviewed by
+    Laundal et al. [3]_.
+
     The full amplitude covariance is stored for every time step in
     ``sec_amps_cov`` with shape (ntimes, nsec, nsec), which requires
     ``8 * ntimes * nsec**2`` bytes of memory (about 0.5 GB for 2000 time
