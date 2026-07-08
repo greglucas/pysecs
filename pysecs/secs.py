@@ -552,10 +552,18 @@ def J_df(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
 
 
 def J_cf(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
-    """Calculate the curl free magnetic field transfer function.
+    """Calculate the curl free current density transfer function.
 
     The transfer function goes from SEC location to observation location
     and assumes unit current SECs at the given locations.
+
+    A positive scaling factor corresponds to a field-aligned current (FAC)
+    flowing into the ionosphere at the SEC pole, horizontal sheet currents
+    directed away from the pole, and uniformly distributed FACs flowing out
+    of the ionosphere on the rest of the shell so that the net FAC over the
+    whole shell is zero (Amm & Viljanen, Fig. 1). Currents are only
+    returned on the SEC shell itself; the radial components represent the
+    FACs attached to the shell at that point.
 
     Parameters
     ----------
@@ -588,10 +596,13 @@ def J_cf(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
         out=np.ones_like(tan_theta2) * np.inf,
         where=tan_theta2 != 0,
     )
-    # Uniformly directed FACs around the globe, except the pole
-    # Integrated over the globe, this will lead to zero
-    J_r = -np.ones(J_theta.shape) / (4 * np.pi * sec_r**2)
-    J_r[theta == 0.0] = 1.0
+    # Uniformly distributed FACs flowing out of the ionosphere (upward)
+    # around the globe return the line current flowing into the ionosphere
+    # at the pole, so the net FAC integrated over the globe is zero.
+    # The pole entry is a finite marker for the delta-function line current
+    # flowing into the ionosphere (downward).
+    J_r = np.ones(J_theta.shape) / (4 * np.pi * sec_r**2)
+    J_r[theta == 0.0] = -1.0
 
     # Only valid on the SEC shell
     J_theta[sec_r != obs_r] = 0.0

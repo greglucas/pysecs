@@ -262,9 +262,10 @@ def test_curl_free_current_magnitudes():
 
     J = np.squeeze(pysecs.J_cf(obs_latlonr, sec_latlonr))
 
-    # Make sure all radial components are oppositely directed
+    # The distributed return FACs flow out of the ionosphere (upward),
+    # which is negative in the Z (down) coordinate
     radial_component = 1.0 / (4 * np.pi * sec_r**2)
-    assert np.all(J[:, 2] == radial_component)
+    assert np.all(J[:, 2] == -radial_component)
 
     # All x components should be zero (angles goes around the equator and all
     # quantities should be parallel to that)
@@ -282,6 +283,18 @@ def test_curl_free_current_magnitudes():
     )
 
     assert_allclose(J_test, J[:, 1], atol=1e-16)
+
+
+def test_curl_free_pole_fac_direction():
+    "The line current at the SEC pole flows into the ionosphere (downward)."
+    sec_r = R_EARTH + 100
+    sec_latlonr = np.array([[0.0, 0.0, sec_r]])
+    # Observation exactly at the SEC pole on the shell
+    obs_latlonr = np.array([[0.0, 0.0, sec_r]])
+
+    J = np.squeeze(pysecs.J_cf(obs_latlonr, sec_latlonr))
+    # Marker value for the delta-function line current: positive Z (down)
+    assert J[2] == 1.0
 
 
 def test_curl_free_magnetic_magnitudes():
@@ -538,7 +551,7 @@ def test_predictJ_cf():
     # Move up to the current sheet
     pred_loc = np.array([[0, 0, R_EARTH + 1e6]])
     J_pred = secs.predict(pred_loc, J=True)
-    expected = np.array([0, 0, 1.169507e-14])
+    expected = np.array([0, 0, -1.169507e-14])
     assert_allclose(expected, J_pred, rtol=1e-6, atol=1e-10)
 
     # Use the predict_J function call directly
@@ -570,7 +583,7 @@ def test_predictJ_cf_df():
     # Move up to the current sheet
     pred_loc = np.array([[0, 0, R_EARTH + 1e6]])
     J_pred = secs.predict(pred_loc, J=True)
-    expected = np.array([0, 0, 1.169507e-14])
+    expected = np.array([0, 0, -1.169507e-14])
     assert_allclose(expected, J_pred, rtol=1e-6, atol=1e-10)
 
     # Use the predict_J function call directly
