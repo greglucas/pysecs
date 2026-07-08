@@ -73,13 +73,15 @@ class SECS:
         self.sec_amps = np.empty((0, self.nsec))
         self.sec_amps_var = np.empty((0, self.nsec))
 
-        # Keep some values around for cache lookups
-        self._obs_loc = None
-        self._T_obs_flat = None
-        self._pred_loc_B = None
-        self._T_pred_B = None
-        self._pred_loc_J = None
-        self._T_pred_J = None
+        # Keep some values around for cache lookups. Empty arrays are
+        # the "not computed yet" sentinels: they never compare equal to
+        # real location arrays, so the first use fills the cache.
+        self._obs_loc = np.empty((0, 3))
+        self._T_obs_flat = np.empty((0, self.nsec))
+        self._pred_loc_B = np.empty((0, 3))
+        self._T_pred_B = np.empty((0, 3, self.nsec))
+        self._pred_loc_J = np.empty((0, 3))
+        self._T_pred_J = np.empty((0, 3, self.nsec))
 
         # Inversion operators from the most recent fit(), used to
         # propagate amplitude covariances to prediction variances
