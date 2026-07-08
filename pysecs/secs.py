@@ -166,6 +166,9 @@ class SECS:
         obs_std: np.ndarray | None = None,
         epsilon: float = 0.05,
         mode: str = "relative",
+        robust: str | None = None,
+        robust_maxiter: int = 20,
+        robust_tol: float = 1e-6,
     ) -> "SECS":
         """Fits the SECS to the given observations.
 
@@ -204,9 +207,37 @@ class SECS:
             - 'variance': filter singular values that contribute to 1-epsilon of
               the total energy of the system (% total variance as a ratio).
             Default: 'relative'
+
+        robust : str, optional
+            Robust reweighting of the observations. A localized disturbance
+            at a single station (spikes, baseline jumps, instrument noise)
+            is inconsistent with any smooth current system this basis can
+            produce, so it shows up as a large standardized residual and is
+            automatically downweighted by iteratively reweighted least
+            squares (IRLS). Weights are applied per vector component and
+            per time step. Options are:
+            - None: ordinary weighted least squares (default).
+            - 'huber': Huber weights, downweights outliers gradually.
+            - 'bisquare': Tukey biweight, fully rejects gross outliers.
+
+        robust_maxiter : int
+            Maximum number of IRLS iterations. Each iteration refits every
+            time step with its own weights, so robust fits of long time
+            series cost roughly ``robust_maxiter`` times the ordinary fit.
+            Default: 20
+
+        robust_tol : float
+            Relative amplitude change used to declare IRLS convergence.
+            Default: 1e-6
         """
         if obs_loc.shape[-1] != 3:
             raise ValueError("Observation locations must have 3 columns (lat, lon, r)")
+
+        if robust not in (None, "huber", "bisquare"):
+            raise ValueError(
+                f"Unknown robust weighting: '{robust}', "
+                "options are None, 'huber', 'bisquare'"
+            )
 
         if self.has_cf and np.any(self.sec_cf_loc[:, 2] >= obs_loc[:, 2].max()):
             warnings.warn(
@@ -238,6 +269,29 @@ class SECS:
             self._T_obs_flat = self._calc_T(obs_loc).reshape(-1, self.nsec)
             self._obs_loc = obs_loc
 
+        self._solve_amplitudes(obs_B_flat, obs_std_flat, epsilon, mode)
+
+        if robust is not None:
+            self._irls(
+                obs_B_flat,
+                obs_std_flat,
+                epsilon,
+                mode,
+                robust,
+                robust_maxiter,
+                robust_tol,
+            )
+        return self
+
+    def _solve_amplitudes(
+        self,
+        obs_B_flat: np.ndarray,
+        obs_std_flat: np.ndarray,
+        epsilon: float,
+        mode: str,
+    ) -> None:
+        """Solve for the SEC amplitudes and variances of all time steps."""
+        ntimes = len(obs_B_flat)
         # Store the fit sec_amps in the object
         self.sec_amps = np.empty((ntimes, self.nsec))
         self.sec_amps_var = np.empty((ntimes, self.nsec))
@@ -275,7 +329,66 @@ class SECS:
 
         self._VWU_patterns = VWU_patterns
         self._pattern_index = pattern_index
-        return self
+
+    def _irls(
+        self,
+        obs_B_flat: np.ndarray,
+        obs_std_flat: np.ndarray,
+        epsilon: float,
+        mode: str,
+        robust: str,
+        maxiter: int,
+        tol: float,
+    ) -> None:
+        """Refine the amplitudes with iteratively reweighted least squares.
+
+        Standardized residuals are scaled by a per-time-step normalized
+        median absolute deviation and mapped to weights with the Huber or
+        Tukey bisquare functions (tuning constants chosen for 95%
+        asymptotic efficiency on Gaussian data). Downweighting is applied
+        by inflating the effective standard error of each observation, so
+        the amplitude variances and prediction variances automatically
+        account for the reduced influence of the flagged observations.
+        """
+        # Tuning constants for 95% asymptotic efficiency on Gaussian data
+        c = {"huber": 1.345, "bisquare": 4.685}[robust]
+        finite = np.isfinite(obs_std_flat)
+
+        prev_amps = self.sec_amps
+        for _ in range(maxiter):
+            pred = prev_amps @ self._T_obs_flat.T
+            resid = np.where(
+                finite,
+                (obs_B_flat - pred) / np.where(finite, obs_std_flat, 1.0),
+                np.nan,
+            )
+
+            # Normalized median absolute deviation about zero of each time
+            # step. A zero scale means the fit is (numerically) perfect, in
+            # which case there are no outliers to reject.
+            with warnings.catch_warnings():
+                # All-NaN rows (fully eliminated time steps) are fine
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                scale = 1.4826 * np.nanmedian(np.abs(resid), axis=1, keepdims=True)
+            scale = np.where(scale > 0, scale, np.inf)
+
+            u = np.abs(np.where(finite, resid, 0.0)) / scale
+            if robust == "huber":
+                with np.errstate(divide="ignore"):
+                    weights = np.minimum(1.0, c / np.where(u > 0, u, np.inf))
+            else:
+                weights = np.where(u < c, (1 - (u / c) ** 2) ** 2, 0.0)
+
+            with np.errstate(divide="ignore"):
+                eff_std = obs_std_flat / weights
+
+            self._solve_amplitudes(obs_B_flat, eff_std, epsilon, mode)
+
+            amp_scale = np.max(np.abs(self.sec_amps), initial=0.0)
+            amp_change = np.max(np.abs(self.sec_amps - prev_amps), initial=0.0)
+            if amp_change <= tol * amp_scale:
+                break
+            prev_amps = self.sec_amps
 
     def fit_unit_currents(self) -> "SECS":
         """Set all SECs to a unit current amplitude."""

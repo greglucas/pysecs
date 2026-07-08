@@ -819,3 +819,94 @@ def test_predict_var_patterns():
     secs.fit_unit_currents()
     with pytest.raises(ValueError, match="Prediction variances"):
         secs.predict_B(pred_loc, return_var=True)
+
+
+def _spike_test_system():
+    """A well-conditioned df system with a station spike at one time step."""
+    rng = np.random.default_rng(3)
+    lat_g, lon_g = np.meshgrid(
+        np.linspace(-3, 3, 4), np.linspace(-3, 3, 4), indexing="ij"
+    )
+    sec_locs = np.column_stack(
+        [lat_g.ravel(), lon_g.ravel(), np.full(16, R_EARTH + 110e3)]
+    )
+    true_amps = rng.normal(0, 1e4, 16)
+    nobs = 12
+    obs_locs = np.column_stack(
+        [rng.uniform(-4, 4, nobs), rng.uniform(-4, 4, nobs), np.full(nobs, R_EARTH)]
+    )
+    B_true = np.tensordot(true_amps, pysecs.T_df(obs_locs, sec_locs), (0, 2))
+    B_scale = np.max(np.abs(B_true))
+
+    obs_B = B_true[np.newaxis] + rng.normal(0, 0.005 * B_scale, (3, nobs, 3))
+    # A large localized disturbance at one station in the middle time step
+    obs_B[1, 0, :] += 50 * B_scale
+
+    pred_locs = np.column_stack(
+        [rng.uniform(-3, 3, 20), rng.uniform(-3, 3, 20), np.full(20, R_EARTH)]
+    )
+    B_pred_true = np.tensordot(true_amps, pysecs.T_df(pred_locs, sec_locs), (0, 2))
+    return sec_locs, obs_locs, obs_B, pred_locs, B_pred_true, B_scale
+
+
+@pytest.mark.parametrize("robust", ["huber", "bisquare"])
+def test_fit_robust_rejects_station_spike(robust):
+    """IRLS keeps a single-station spike from contaminating the whole map."""
+    sec_locs, obs_locs, obs_B, pred_locs, B_pred_true, B_scale = _spike_test_system()
+
+    plain = pysecs.SECS(sec_df_loc=sec_locs)
+    plain.fit(obs_locs, obs_B, epsilon=1e-8)
+    err_plain = (
+        np.max(np.abs(plain.predict_B(pred_locs) - B_pred_true), axis=(1, 2)) / B_scale
+    )
+    # The spike leaks into the entire spatial solution of that time step
+    assert err_plain[1] > 1.0
+
+    secs = pysecs.SECS(sec_df_loc=sec_locs)
+    secs.fit(obs_locs, obs_B, epsilon=1e-8, robust=robust)
+    err_robust = (
+        np.max(np.abs(secs.predict_B(pred_locs) - B_pred_true), axis=(1, 2)) / B_scale
+    )
+    # The spiked time step recovers to the noise level of the clean data
+    assert err_robust[1] < 0.05
+    # The clean time steps stay at their ordinary accuracy
+    assert err_robust[0] < 0.1
+    assert err_robust[2] < 0.1
+
+
+def test_fit_robust_clean_data_unchanged():
+    """Robust fitting on clean data reproduces the ordinary fit."""
+    sec_locs, obs_locs, obs_B, pred_locs, _, _ = _spike_test_system()
+    obs_B = obs_B[[0]]  # single clean time step
+
+    plain = pysecs.SECS(sec_df_loc=sec_locs)
+    plain.fit(obs_locs, obs_B, epsilon=1e-8)
+    robust = pysecs.SECS(sec_df_loc=sec_locs)
+    robust.fit(obs_locs, obs_B, epsilon=1e-8, robust="huber")
+
+    pred_plain = plain.predict_B(pred_locs)
+    pred_robust = robust.predict_B(pred_locs)
+    scale = np.max(np.abs(pred_plain))
+    assert_allclose(pred_robust, pred_plain, atol=0.05 * scale)
+
+
+def test_fit_robust_respects_eliminated_observations():
+    """Observations eliminated with infinite std stay eliminated under IRLS."""
+    sec_locs, obs_locs, obs_B, _, _, _ = _spike_test_system()
+    obs_std = np.ones_like(obs_B)
+    # Eliminate the spiked station entirely
+    obs_std[:, 0, :] = np.inf
+
+    secs = pysecs.SECS(sec_df_loc=sec_locs)
+    secs.fit(obs_locs, obs_B, obs_std=obs_std, epsilon=1e-8, robust="bisquare")
+    assert np.all(np.isfinite(secs.sec_amps))
+    assert np.all(np.isfinite(secs.sec_amps_var))
+
+
+def test_fit_robust_bad_name():
+    """Unknown robust weighting names raise an error."""
+    secs = pysecs.SECS(sec_df_loc=[[1.0, 0.0, R_EARTH + 1e6]])
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((1, 1, 3))
+    with pytest.raises(ValueError, match="Unknown robust weighting"):
+        secs.fit(obs_loc, obs_B, robust="tukey")
