@@ -11,6 +11,12 @@ pysecs is an open-source library for calculating Spherical Elementary Current Sy
 
 - Based upon the [scikit-learn](http://scikit-learn.org/) framework with `fit()` and `predict()` methods.
 - The only dependency is [NumPy](http://www.numpy.org/). It is built using fast broadcasting techniques to provide highly scalable calculations.
+- Divergence-free and curl-free systems, including the curl-free magnetic
+  field for observations above the current shell (satellite altitudes).
+- Uncertainty propagation: amplitude variances and prediction variance maps
+  (`predict(..., return_var=True)`).
+- Robust fitting (`fit(..., robust='huber'|'bisquare')`) that automatically
+  downweights localized single-station disturbances.
 
 ## Examples
 

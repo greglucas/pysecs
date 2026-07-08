@@ -23,7 +23,9 @@ class SECS:
     """Spherical Elementary Current System (SECS).
 
     The algorithm is implemented directly in spherical coordinates
-    from the equations of the 1999 Amm & Viljanen paper [1]_.
+    from the equations of the 1999 Amm & Viljanen paper [1]_. The
+    magnetic field of the curl-free system is implemented from
+    Equation 2.15 of the Vanhamäki & Juusola review chapter [2]_.
 
     Parameters
     ----------
@@ -202,10 +204,12 @@ class SECS:
 
         mode : str
             The mode used to filter the singular values. Options are:
+
             - 'relative': filter singular values that are less than epsilon times
               the largest singular value, keep [S >= epsilon * S.max()].
             - 'variance': filter singular values that contribute to 1-epsilon of
               the total energy of the system (% total variance as a ratio).
+
             Default: 'relative'
 
         robust : str, optional
@@ -216,6 +220,7 @@ class SECS:
             automatically downweighted by iteratively reweighted least
             squares (IRLS). Weights are applied per vector component and
             per time step. Options are:
+
             - None: ordinary weighted least squares (default).
             - 'huber': Huber weights, downweights outliers gradually.
             - 'bisquare': Tukey biweight, fully rejects gross outliers.
