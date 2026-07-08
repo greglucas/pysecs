@@ -139,7 +139,9 @@ class SECS:
         Vh = Vh[valid, :]
         W = 1.0 / S
 
-        return Vh.T @ (np.diag(W) @ U.T)
+        # Scale the rows of Vh by W via broadcasting rather than
+        # materializing the dense diagonal matrix diag(W)
+        return (Vh.T * W) @ U.T
 
     def fit(
         self,
@@ -223,34 +225,31 @@ class SECS:
         self.sec_amps = np.empty((ntimes, self.nsec))
         self.sec_amps_var = np.empty((ntimes, self.nsec))
 
-        if np.allclose(obs_std_flat, obs_std_flat[0]):
-            # The SVD is the same for all time steps, so we can calculate it once
-            # and broadcast it to all time steps avoiding the for-loop below
-            VWU = self._compute_VWU(self._T_obs_flat, obs_std_flat[0], epsilon, mode)
-            self.sec_amps[:] = (obs_B_flat / obs_std_flat) @ VWU.T
+        # The SVD only depends on the uncertainty pattern, so group time
+        # steps that share an identical pattern (e.g. recurring station
+        # dropouts) and compute the SVD once per unique pattern, applying
+        # it to all matching time steps at once. With uniform uncertainties
+        # this reduces to a single SVD and one vectorized solve.
+        # Rows are grouped by their exact byte pattern, which is linear in
+        # ntimes (np.unique(axis=0) sorts rows and is much slower here).
+        pattern_index = np.empty(ntimes, dtype=np.intp)
+        patterns: list[np.ndarray] = []
+        seen: dict[bytes, int] = {}
+        for i, std_row in enumerate(obs_std_flat):
+            idx = seen.setdefault(std_row.tobytes(), len(patterns))
+            if idx == len(patterns):
+                patterns.append(std_row)
+            pattern_index[i] = idx
 
-            valid = np.isfinite(obs_std_flat[0])
+        for i, pattern_std in enumerate(patterns):
+            t_mask = pattern_index == i
+            VWU = self._compute_VWU(self._T_obs_flat, pattern_std, epsilon, mode)
+            self.sec_amps[t_mask] = (obs_B_flat[t_mask] / pattern_std) @ VWU.T
+
+            valid = np.isfinite(pattern_std)
             VWU_masked = VWU[:, valid]
-            std_masked = obs_std_flat[0, valid]
-            self.sec_amps_var[:] = np.sum((VWU_masked * std_masked) ** 2, axis=1)
-        else:
-            prev_std = None
-            VWU = None
-            for i in range(ntimes):
-                if prev_std is None or not np.allclose(
-                    obs_std_flat[i], prev_std, atol=1e-12, rtol=1e-12
-                ):
-                    VWU = self._compute_VWU(
-                        self._T_obs_flat, obs_std_flat[i], epsilon, mode
-                    )
-                    prev_std = obs_std_flat[i]
-
-                self.sec_amps[i] = VWU @ (obs_B_flat[i] / obs_std_flat[i])
-
-                valid = np.isfinite(obs_std_flat[i])
-                VWU_masked = VWU[:, valid]
-                std_masked = obs_std_flat[i, valid]
-                self.sec_amps_var[i] = np.sum((VWU_masked * std_masked) ** 2, axis=1)
+            std_masked = pattern_std[valid]
+            self.sec_amps_var[t_mask] = np.sum((VWU_masked * std_masked) ** 2, axis=1)
         return self
 
     def fit_unit_currents(self) -> "SECS":
