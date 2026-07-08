@@ -6,7 +6,6 @@
 
 pysecs is an open-source library for calculating Spherical Elementary Current Systems (SECS).
 
-
 ## Features
 
 - Based upon the [scikit-learn](http://scikit-learn.org/) framework with `fit()` and `predict()` methods.
@@ -19,6 +18,9 @@ pysecs is an open-source library for calculating Spherical Elementary Current Sy
   downweights localized single-station disturbances.
 - Temporal estimation with `KalmanSECS`: a Kalman filter / smoother over the
   SEC amplitudes with innovation gating for impulsive outliers.
+- Automatic SECS grid generation from an observation network
+  (`SECS.from_observations(obs_loc, r_shell)`), with sensible defaults for
+  spacing and padding and a guard against poles landing on a station.
 
 ## Examples
 
