@@ -3,6 +3,8 @@
 Calculate magnetic field transfer functions and fit a system (SECS) to observations.
 """
 
+import warnings
+
 import numpy as np
 
 
@@ -26,6 +28,10 @@ class SECS:
         continuation from the ground to the ionosphere using spherical elementary
         current systems." Earth, Planets and Space 51.6 (1999): 431-440.
         doi:10.1186/BF03352247
+    .. [2] Vanhamäki, H., and L. Juusola. "Introduction to Spherical Elementary
+        Current Systems." Ionospheric Multi-Spacecraft Analysis Tools,
+        ISSI Scientific Report Series 17 (2020): 5-33.
+        doi:10.1007/978-3-030-26732-2_2
     """
 
     def __init__(
@@ -121,6 +127,12 @@ class SECS:
         else:
             raise ValueError(f"Unknown SVD filtering mode: '{mode}'")
 
+        # Never invert exactly-zero singular values. These arise when the
+        # transfer matrix has all-zero columns, e.g. curl-free SECs with
+        # observations only below the current shell where their magnetic
+        # field vanishes identically.
+        valid &= S > 0
+
         # Truncate and build VWU
         U = U[:, valid]
         S = S[valid]
@@ -176,6 +188,18 @@ class SECS:
         """
         if obs_loc.shape[-1] != 3:
             raise ValueError("Observation locations must have 3 columns (lat, lon, r)")
+
+        if self.has_cf and np.any(self.sec_cf_loc[:, 2] >= obs_loc[:, 2].max()):
+            warnings.warn(
+                "Some curl-free SECs are at or above all observation "
+                "locations. The magnetic field of a curl-free SEC is "
+                "identically zero at and below its current shell "
+                "(Fukushima's theorem), so these amplitudes are not "
+                "constrained by the observations and will be set to zero. "
+                "Add observations above the current shell (e.g. satellite "
+                "data) to fit curl-free systems.",
+                stacklevel=2,
+            )
 
         if obs_B.ndim == 2:
             # Just a single snapshot given, so expand the dimensionality
@@ -482,6 +506,14 @@ def T_cf(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
     The transfer function goes from SEC location to observation location
     and assumes unit current SECs at the given locations.
 
+    The curl-free SEC, together with its associated radial field-aligned
+    currents (FACs), produces no magnetic field at or below its current
+    shell (Fukushima's theorem generalized to a sphere) and a purely
+    azimuthal magnetic field above it. A positive scaling factor
+    corresponds to a FAC flowing into the ionosphere at the SEC pole,
+    horizontal sheet currents directed away from the pole, and uniformly
+    distributed FACs flowing out of the ionosphere elsewhere.
+
     Parameters
     ----------
     obs_loc : ndarray (nobs, 3 [lat, lon, r])
@@ -495,9 +527,39 @@ def T_cf(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
     ndarray (nobs, 3, nsec)
         The T transfer matrix.
     """
-    raise NotImplementedError(
-        "Curl Free Magnetic Field Transfers are not implemented yet."
+    nobs = len(obs_loc)
+    nsec = len(sec_loc)
+
+    obs_r = obs_loc[:, 2][:, np.newaxis]
+    sec_r = sec_loc[:, 2][np.newaxis, :]
+
+    theta, alpha = _calc_angular_distance_and_bearing(obs_loc[:, :2], sec_loc[:, :2])
+
+    mu0_over_4pi = 1e-7
+
+    # Vanhamäki & Juusola: Equation 2.15
+    # B_phi = -mu0 I0 / (4 pi r) cot(theta / 2) above the current shell
+    tan_theta2 = np.tan(theta / 2.0)
+    B_phi = np.divide(
+        1.0,
+        tan_theta2,
+        out=np.ones_like(tan_theta2) * np.inf,
+        where=tan_theta2 != 0.0,
     )
+    B_phi *= -mu0_over_4pi / obs_r
+
+    # Amm & Viljanen: Section 2 / Vanhamäki & Juusola: Equation 2.15
+    # No magnetic field at or below the current shell (Fukushima's theorem)
+    B_phi = np.where(obs_r > sec_r, B_phi, 0.0)
+
+    # Transform back to Bx, By, Bz at each local point
+    T = np.empty((nobs, 3, nsec))
+    # alpha == angle (from cartesian x-axis (By), going towards y-axis (Bx))
+    T[:, 0, :] = -B_phi * np.cos(alpha)
+    T[:, 1, :] = B_phi * np.sin(alpha)
+    T[:, 2, :] = 0.0
+
+    return T
 
 
 def J_df(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:

@@ -297,20 +297,106 @@ def test_curl_free_pole_fac_direction():
     assert J[2] == 1.0
 
 
-def test_curl_free_magnetic_magnitudes():
-    "Make sure the curl free magnetic amplitudes are correct."
-    # TODO: Update this test once T_cf is implemented
-    # Place the SEC at the North Pole
-    sec_r = R_EARTH + 100
+def test_curl_free_magnetic_below_shell():
+    "The CF magnetic field vanishes at and below the shell (Fukushima)."
+    sec_r = R_EARTH + 100e3
+    sec_latlonr = np.array([[30.0, 40.0, sec_r]])
+    angles = np.linspace(0, 180, 19)
+    obs_latlonr = np.zeros((len(angles), 3))
+    obs_latlonr[:, 1] = angles
+
+    # On the ground and on the current shell itself
+    for obs_r in (R_EARTH, sec_r):
+        obs_latlonr[:, 2] = obs_r
+        T = pysecs.T_cf(obs_latlonr, sec_latlonr)
+        assert np.all(T == 0.0)
+
+
+def test_curl_free_magnetic_magnitudes_obs_over():
+    "Make sure the curl free magnetic amplitudes are correct above the shell."
+    # Place the SEC pole on the equator
+    sec_r = R_EARTH
     sec_latlonr = np.array([[0.0, 0.0, sec_r]])
     # Going out in an angle from the SEC (in longitude)
-    angles = np.linspace(0.1, 180)
+    angles = np.linspace(0.1, 179.9)
+    obs_r = R_EARTH + 100e3
     obs_latlonr = np.zeros((*angles.shape, 3))
     obs_latlonr[:, 1] = angles
-    obs_latlonr[:, 2] = sec_r
+    obs_latlonr[:, 2] = obs_r
 
-    with pytest.raises(NotImplementedError, match="Curl Free Magnetic"):
-        pysecs.T_cf(obs_latlonr, sec_latlonr)
+    B = np.squeeze(pysecs.T_cf(obs_latlonr, sec_latlonr))
+
+    # The field is purely azimuthal about the SEC pole: for observations
+    # due east of the pole that is the +/- x (north/south) direction
+    assert np.all(B[:, 2] == 0.0)
+    assert_allclose(np.zeros(angles.shape), B[:, 1], atol=1e-25)
+
+    # Vanhamäki & Juusola: Equation 2.15
+    mu0 = 4 * np.pi * 1e-7
+    theta = np.deg2rad(angles)
+    B_phi = -mu0 / (4 * np.pi * obs_r) / np.tan(theta / 2.0)
+    # phi-hat at observations due east of the pole points north (+x)
+    assert_allclose(B_phi, B[:, 0])
+
+
+def test_curl_free_magnetic_directions():
+    "The CF magnetic field circulates clockwise around a downward FAC."
+    # Place the SEC at the equator
+    sec_r = R_EARTH + 100
+    sec_latlonr = np.array([[0.0, 0.0, sec_r]])
+    # Going around in a circle from the point, above the shell
+    obs_r = sec_r + 100e3
+    obs_latlonr = np.array(
+        [[5.0, 0.0, obs_r], [0.0, 5.0, obs_r], [-5, 0.0, obs_r], [0.0, -5.0, obs_r]]
+    )
+
+    B = np.squeeze(pysecs.T_cf(obs_latlonr, sec_latlonr))
+
+    angles = np.arctan2(B[:, 0], B[:, 1])
+    # A positive amplitude has a downward line current at the pole, so the
+    # field circulates clockwise viewed from above:
+    # eastward, southward, westward, northward
+    expected_angles = np.deg2rad([0.0, -90.0, 180.0, 90.0])
+    assert_allclose(angles, expected_angles, rtol=1e-10, atol=1e-10)
+
+
+def test_curl_free_fit_ground_only_warns():
+    "Ground-only observations cannot constrain curl-free amplitudes."
+    sec_loc = [[1.0, 0.0, R_EARTH + 1e6], [-1.0, 0.0, R_EARTH + 1e6]]
+    secs = pysecs.SECS(sec_cf_loc=sec_loc)
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.array([[1.0, 1.0, 1.0]])
+
+    with pytest.warns(UserWarning, match="Fukushima"):
+        secs.fit(obs_loc, obs_B)
+
+    # The zero singular values are filtered out, leaving zero amplitudes
+    # rather than infinities/NaNs
+    assert np.all(np.isfinite(secs.sec_amps))
+    assert_allclose(np.zeros((1, 2)), secs.sec_amps)
+
+
+def test_curl_free_fit_mixed_ground_only():
+    "A mixed df+cf fit from the ground matches the df-only fit."
+    df_loc = [[1.0, 0.0, R_EARTH + 1e6], [-1.0, 0.0, R_EARTH + 1e6]]
+    cf_loc = [[0.0, 1.0, R_EARTH + 1e6], [0.0, -1.0, R_EARTH + 1e6]]
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.array([[1.0, 1.0, 1.0]])
+
+    secs_df = pysecs.SECS(sec_df_loc=df_loc)
+    secs_df.fit(obs_loc, obs_B)
+
+    secs_mixed = pysecs.SECS(sec_df_loc=df_loc, sec_cf_loc=cf_loc)
+    with pytest.warns(UserWarning, match="Fukushima"):
+        secs_mixed.fit(obs_loc, obs_B)
+
+    # cf amplitudes unconstrained -> zero, df amplitudes unchanged
+    assert_allclose(np.zeros((1, 2)), secs_mixed.sec_amps[:, 2:])
+    assert_allclose(secs_df.sec_amps, secs_mixed.sec_amps[:, :2])
+
+    # Ground magnetic field predictions also match
+    pred_loc = np.array([[0.5, 0.5, R_EARTH]])
+    assert_allclose(secs_df.predict_B(pred_loc), secs_mixed.predict_B(pred_loc))
 
 
 def test_empty_object():

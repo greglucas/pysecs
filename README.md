@@ -77,6 +77,17 @@ from the ground to the ionosphere using spherical elementary current systems."
 Earth, Planets and Space 51.6 (1999): 431-440. doi:10.1186/BF03352247
 ```
 
+### [Review Chapter (curl-free magnetic field)](https://doi.org/10.1007/978-3-030-26732-2_2)
+
+The magnetic field of the curl-free system (Equation 2.15) implemented in this
+package is given in this review chapter.
+
+```bibtex
+Vanhamäki, H., and L. Juusola. "Introduction to Spherical Elementary Current Systems."
+Ionospheric Multi-Spacecraft Analysis Tools, ISSI Scientific Report Series 17 (2020): 5-33.
+doi:10.1007/978-3-030-26732-2_2
+```
+
 ## Problems or Questions
 
 - [Report an issue using the GitHub issue tracker](http://github.com/greglucas/pysecs/issues)
