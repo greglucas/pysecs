@@ -333,6 +333,8 @@ class KalmanSECS:
             raise ValueError("Call fit() before predicting with return_var=True.")
 
         pred = self.secs.predict(pred_loc, J=J)
+        # Without return_var the SECS predict always returns an array
+        assert isinstance(pred, np.ndarray)  # noqa: S101
         if not return_var:
             return pred
 

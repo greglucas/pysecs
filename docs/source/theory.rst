@@ -151,7 +151,7 @@ system (single-station spikes, baseline jumps) are automatically
 downweighted.
 
 Temporal estimation
---------------------
+-------------------
 
 :class:`pysecs.KalmanSECS` couples the time steps with a
 linear-Gaussian state-space model on the amplitudes,
