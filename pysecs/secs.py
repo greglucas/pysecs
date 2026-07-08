@@ -68,6 +68,11 @@ class SECS:
         self._pred_loc_J = None
         self._T_pred_J = None
 
+        # Inversion operators from the most recent fit(), used to
+        # propagate amplitude covariances to prediction variances
+        self._VWU_patterns: list[np.ndarray] | None = None
+        self._pattern_index: np.ndarray | None = None
+
     @property
     def has_df(self) -> bool:
         """Whether this system has any divergence free currents."""
@@ -167,10 +172,11 @@ class SECS:
         obs_B: ndarray (ntimes, nobs, 3 [Bx, By, Bz])
             An array containing the measured/observed B-fields.
 
-        obs_std : ndarray (ntimes, nobs, 3 [varX, varY, varZ]), optional
-            Standard error of vector components at each observation location.
-            This can be used to weight different observations more/less heavily.
-            An infinite value eliminates the observation from the fit.
+        obs_std : ndarray (ntimes, nobs, 3 [stdX, stdY, stdZ]), optional
+            Standard error (1-sigma) of vector components at each observation
+            location. This can be used to weight different observations
+            more/less heavily. An infinite value eliminates the observation
+            from the fit.
             Default: ones(nobs, 3) equal weights
 
         epsilon : float
@@ -241,24 +247,38 @@ class SECS:
                 patterns.append(std_row)
             pattern_index[i] = idx
 
+        # Keep the inversion operators around so predict() can propagate
+        # the amplitude covariance to prediction variances
+        VWU_patterns = []
         for i, pattern_std in enumerate(patterns):
             t_mask = pattern_index == i
             VWU = self._compute_VWU(self._T_obs_flat, pattern_std, epsilon, mode)
             self.sec_amps[t_mask] = (obs_B_flat[t_mask] / pattern_std) @ VWU.T
 
-            valid = np.isfinite(pattern_std)
-            VWU_masked = VWU[:, valid]
-            std_masked = pattern_std[valid]
-            self.sec_amps_var[t_mask] = np.sum((VWU_masked * std_masked) ** 2, axis=1)
+            # amps = VWU @ (B / std). With Var(B) = std**2 the scaled
+            # observations have unit variance, so Var(amps) = sum(VWU**2).
+            # Observations eliminated with infinite std have exactly zero
+            # columns in VWU and drop out automatically.
+            self.sec_amps_var[t_mask] = np.sum(VWU**2, axis=1)
+            VWU_patterns.append(VWU)
+
+        self._VWU_patterns = VWU_patterns
+        self._pattern_index = pattern_index
         return self
 
     def fit_unit_currents(self) -> "SECS":
         """Set all SECs to a unit current amplitude."""
         self.sec_amps = np.ones((1, self.nsec))
+        self.sec_amps_var = np.zeros((1, self.nsec))
+        # No inversion took place, so there is no covariance to propagate
+        self._VWU_patterns = None
+        self._pattern_index = None
 
         return self
 
-    def predict(self, pred_loc: np.ndarray, J: bool = False) -> np.ndarray:
+    def predict(
+        self, pred_loc: np.ndarray, J: bool = False, return_var: bool = False
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """Calculate the predicted magnetic field or currents.
 
         After a set of observations has been fit to this system we can
@@ -274,11 +294,19 @@ class SECS:
             Whether to predict currents (J=True) or magnetic fields (J=False)
             Default: False (magnetic field prediction)
 
+        return_var: boolean
+            Whether to also return the variance of the predictions,
+            propagated from the full posterior covariance of the fitted
+            amplitudes (treating the obs_std passed to fit() as 1-sigma
+            standard errors of independent observations).
+            Default: False
+
         Returns
         -------
         ndarray (ntimes, npred, 3 [lat, lon, r])
             The predicted values calculated from the current amplitudes that were
-            fit to this system.
+            fit to this system. If return_var is True, a tuple of
+            (predictions, variances) with identical shapes is returned.
         """
         if pred_loc.shape[-1] != 3:
             raise ValueError("Prediction locations must have 3 columns (lat, lon, r)")
@@ -304,9 +332,34 @@ class SECS:
                 self._pred_loc_B = pred_loc
             T_pred = self._T_pred_B
 
-        return np.squeeze(np.tensordot(self.sec_amps, T_pred, (1, 2)))
+        pred = np.squeeze(np.tensordot(self.sec_amps, T_pred, (1, 2)))
+        if not return_var:
+            return pred
 
-    def predict_B(self, pred_loc: np.ndarray) -> np.ndarray:
+        if self._VWU_patterns is None or self._pattern_index is None:
+            raise ValueError(
+                "Prediction variances require amplitudes fit with fit(). "
+                "Call fit() before predicting with return_var=True."
+            )
+
+        # pred = T_pred @ amps and amps = VWU @ (B / std) with the scaled
+        # observations having unit variance, so
+        # Cov(pred) = (T_pred @ VWU) @ (T_pred @ VWU).T and the variances
+        # are the row sums of squares of M = T_pred @ VWU. The variance
+        # only depends on the uncertainty pattern, so it is computed once
+        # per pattern from the operators saved by fit().
+        npred = len(pred_loc)
+        T_pred_flat = T_pred.reshape(-1, self.nsec)
+        var = np.empty((len(self.sec_amps), npred, 3))
+        for i, VWU in enumerate(self._VWU_patterns):
+            M = T_pred_flat @ VWU
+            var[self._pattern_index == i] = np.sum(M**2, axis=1).reshape(npred, 3)
+
+        return pred, np.squeeze(var)
+
+    def predict_B(
+        self, pred_loc: np.ndarray, return_var: bool = False
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """Calculate the predicted magnetic fields.
 
         After a set of observations has been fit to this system we can
@@ -318,15 +371,22 @@ class SECS:
         pred_loc: ndarray (npred, 3 [lat, lon, r])
             An array containing the locations where the predictions are desired.
 
+        return_var: boolean
+            Whether to also return the variance of the predictions.
+            Default: False
+
         Returns
         -------
         ndarray (ntimes, npred, 3 [lat, lon, r])
             The predicted values calculated from the current amplitudes that were
-            fit to this system.
+            fit to this system. If return_var is True, a tuple of
+            (predictions, variances) with identical shapes is returned.
         """
-        return self.predict(pred_loc)
+        return self.predict(pred_loc, return_var=return_var)
 
-    def predict_J(self, pred_loc: np.ndarray) -> np.ndarray:
+    def predict_J(
+        self, pred_loc: np.ndarray, return_var: bool = False
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """Calculate the predicted currents.
 
         After a set of observations has been fit to this system we can
@@ -338,13 +398,18 @@ class SECS:
         pred_loc: ndarray (npred, 3 [lat, lon, r])
             An array containing the locations where the predictions are desired.
 
+        return_var: boolean
+            Whether to also return the variance of the predictions.
+            Default: False
+
         Returns
         -------
         ndarray (ntimes, npred, 3 [lat, lon, r])
             The predicted values calculated from the current amplitudes that were
-            fit to this system.
+            fit to this system. If return_var is True, a tuple of
+            (predictions, variances) with identical shapes is returned.
         """
-        return self.predict(pred_loc, J=True)
+        return self.predict(pred_loc, J=True, return_var=return_var)
 
     def _calc_T(self, obs_loc: np.ndarray) -> np.ndarray:
         """Calculate the T transfer matrix.

@@ -724,3 +724,98 @@ def test_changing_obs_shape():
     assert pred.shape == (ntimes, npred, 3)
     pred = secs.predict(pred_locs[:-1])
     assert pred.shape == (ntimes, npred - 1, 3)
+
+
+def test_sec_amps_var_scales_with_std():
+    """Uniformly doubling obs_std doubles the amplitude standard error."""
+    sec_loc = [[1.0, 0.0, R_EARTH + 1e6], [-1.0, 0.0, R_EARTH + 1e6]]
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((1, 1, 3))
+
+    secs1 = pysecs.SECS(sec_df_loc=sec_loc)
+    secs1.fit(obs_loc, obs_B, obs_std=np.ones_like(obs_B))
+    secs2 = pysecs.SECS(sec_df_loc=sec_loc)
+    secs2.fit(obs_loc, obs_B, obs_std=2 * np.ones_like(obs_B))
+
+    # Uniform weighting does not change the amplitudes themselves
+    assert_allclose(secs1.sec_amps, secs2.sec_amps)
+    # ... but the amplitude variance scales with the observation variance
+    assert_allclose(4 * secs1.sec_amps_var, secs2.sec_amps_var)
+
+
+def test_sec_amps_var_analytic():
+    """The amplitude variance matches the analytic least-squares covariance."""
+    sec_loc = np.array([[2.0, 1.0, R_EARTH + 1e5], [-1.0, -2.0, R_EARTH + 1e5]])
+    obs_loc = np.array([[0.5, 0.5, R_EARTH], [-1.5, 1.0, R_EARTH]])
+    obs_B = np.array([[[10.0, -5.0, 3.0], [2.0, 8.0, -1.0]]]) * 1e-9
+    obs_std = np.array([[[1.0, 2.0, 3.0], [0.5, 1.5, 2.5]]]) * 1e-9
+
+    secs = pysecs.SECS(sec_df_loc=sec_loc)
+    secs.fit(obs_loc, obs_B, obs_std=obs_std, epsilon=0)
+
+    # Unweighted design matrix and the generalized least squares covariance
+    A = pysecs.T_df(obs_loc, sec_loc).reshape(-1, 2)
+    Cinv = np.diag(1.0 / obs_std.ravel() ** 2)
+    cov = np.linalg.inv(A.T @ Cinv @ A)
+    amps = cov @ A.T @ Cinv @ obs_B.ravel()
+
+    assert_allclose(amps, secs.sec_amps[0], rtol=1e-8)
+    assert_allclose(np.diag(cov), secs.sec_amps_var[0], rtol=1e-8)
+
+
+def test_variance_montecarlo():
+    """Amplitude and prediction variances match Monte Carlo statistics."""
+    rng = np.random.default_rng(7)
+    lat_g, lon_g = np.meshgrid([-2.0, 2.0], [-2.0, 2.0], indexing="ij")
+    sec_locs = np.column_stack(
+        [lat_g.ravel(), lon_g.ravel(), np.full(4, R_EARTH + 110e3)]
+    )
+    obs_locs = np.column_stack(
+        [rng.uniform(-3, 3, 4), rng.uniform(-3, 3, 4), np.full(4, R_EARTH)]
+    )
+    true_amps = rng.normal(0, 1e4, 4)
+    B_true = np.tensordot(true_amps, pysecs.T_df(obs_locs, sec_locs), (0, 2))
+
+    ndraws = 20000
+    std = rng.uniform(1e-9, 3e-9, (4, 3))
+    obs_B = B_true[np.newaxis] + rng.normal(0, 1, (ndraws, 4, 3)) * std
+    obs_std = np.broadcast_to(std, obs_B.shape)
+
+    secs = pysecs.SECS(sec_df_loc=sec_locs)
+    secs.fit(obs_locs, obs_B, obs_std=obs_std, epsilon=1e-8)
+
+    # Empirical variance of the fitted amplitudes across the draws
+    assert_allclose(secs.sec_amps.var(axis=0), secs.sec_amps_var[0], rtol=0.1)
+
+    pred_locs = np.column_stack(
+        [rng.uniform(-3, 3, 5), rng.uniform(-3, 3, 5), np.full(5, R_EARTH)]
+    )
+    pred, var = secs.predict_B(pred_locs, return_var=True)
+    assert var.shape == pred.shape
+    assert_allclose(pred.var(axis=0), var[0], rtol=0.1)
+
+
+def test_predict_var_patterns():
+    """Prediction variances follow the per-timestep uncertainty patterns."""
+    sec_loc = [[1.0, 0.0, R_EARTH + 1e6], [-1.0, 0.0, R_EARTH + 1e6]]
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((2, 1, 3))
+    obs_std = np.ones_like(obs_B)
+    # Eliminate the z component in the second timestep
+    obs_std[1, :, 2] = np.inf
+
+    secs = pysecs.SECS(sec_df_loc=sec_loc)
+    secs.fit(obs_loc, obs_B, obs_std=obs_std)
+
+    pred_loc = np.array([[0.5, 0.5, R_EARTH], [5.0, -3.0, R_EARTH]])
+    pred, var = secs.predict_B(pred_loc, return_var=True)
+    assert pred.shape == (2, 2, 3)
+    assert var.shape == (2, 2, 3)
+    assert np.all(var > 0)
+    # Different uncertainty patterns produce different variances
+    assert not np.allclose(var[0], var[1])
+
+    # Variance requests require a proper fit
+    secs.fit_unit_currents()
+    with pytest.raises(ValueError, match="Prediction variances"):
+        secs.predict_B(pred_loc, return_var=True)
