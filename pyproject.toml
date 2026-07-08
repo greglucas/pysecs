@@ -55,6 +55,9 @@ dev = [
 homepage = "https://greglucas.github.io/pysecs/"
 repository = "https://github.com/greglucas/pysecs"
 
+[tool.setuptools.package-data]
+pysecs = ["py.typed"]
+
 [tool.setuptools_scm]
 version_scheme = "release-branch-semver"
 local_scheme = "node-and-date"

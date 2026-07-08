@@ -8,6 +8,17 @@ import warnings
 import numpy as np
 
 
+__all__ = [
+    "SECS",
+    "J_cf",
+    "J_df",
+    "T_cf",
+    "T_df",
+    "calc_angular_distance",
+    "calc_bearing",
+]
+
+
 class SECS:
     """Spherical Elementary Current System (SECS).
 
