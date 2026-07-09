@@ -12,3 +12,4 @@ repos:
       rev: 'v2.1.0'
       hooks:
       -   id: mypy
+          exclude: ^examples/
