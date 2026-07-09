@@ -917,8 +917,18 @@ def _calc_angular_distance_and_bearing(
     cos_dlon = np.cos(dlon)
     sin_dlon = np.sin(dlon)
 
+    # x, y, and dot below are the components of the Vincenty formula for
+    # angular distance. Unlike the law-of-cosines + arccos form (which this
+    # replaced), it has no restricted input domain, so it can't return NaN
+    # for coincident points due to floating-point round-off, and it stays
+    # accurate when the two points are close together, where arccos loses
+    # precision rapidly. x and y also double as the bearing components below.
+    x = cos_lat2 * sin_dlon
+    y = cos_lat1 * sin_lat2 - sin_lat1 * cos_lat2 * cos_dlon
+    dot = sin_lat1 * sin_lat2 + cos_lat1 * cos_lat2 * cos_dlon
+
     # theta == angular distance between two points
-    theta = np.arccos(sin_lat1 * sin_lat2 + cos_lat1 * cos_lat2 * cos_dlon)
+    theta = np.arctan2(np.hypot(x, y), dot)
 
     # alpha == bearing, going from point1 to point2
     #          angle (from cartesian x-axis (By), going towards y-axis (Bx))
@@ -927,8 +937,6 @@ def _calc_angular_distance_and_bearing(
     # SEC coordinates are: theta (colatitude (+ away from North Pole)),
     #                      phi (longitude, + east), r (+ out)
     # Obs coordinates are: X (+ north), Y (+ east), Z (+ down)
-    x = cos_lat2 * sin_dlon
-    y = cos_lat1 * sin_lat2 - sin_lat1 * cos_lat2 * cos_dlon
     alpha = np.pi / 2 - np.arctan2(x, y)
 
     return theta, alpha
@@ -958,12 +966,26 @@ def calc_angular_distance(latlon1: np.ndarray, latlon2: np.ndarray) -> np.ndarra
     lat2 = np.deg2rad(latlon2[:, 0])[np.newaxis, :]
     lon2 = np.deg2rad(latlon2[:, 1])[np.newaxis, :]
 
+    cos_lat1 = np.cos(lat1)
+    sin_lat1 = np.sin(lat1)
+    cos_lat2 = np.cos(lat2)
+    sin_lat2 = np.sin(lat2)
+
     dlon = lon2 - lon1
+    cos_dlon = np.cos(dlon)
+    sin_dlon = np.sin(dlon)
+
+    # Vincenty formula: unlike the law-of-cosines + arccos form (which this
+    # replaced), it has no restricted input domain, so it can't return NaN
+    # for coincident points due to floating-point round-off, and it stays
+    # accurate when the two points are close together, where arccos loses
+    # precision rapidly.
+    x = cos_lat2 * sin_dlon
+    y = cos_lat1 * sin_lat2 - sin_lat1 * cos_lat2 * cos_dlon
+    dot = sin_lat1 * sin_lat2 + cos_lat1 * cos_lat2 * cos_dlon
 
     # theta == angular distance between two points
-    theta = np.arccos(
-        np.sin(lat1) * np.sin(lat2) + np.cos(lat1) * np.cos(lat2) * np.cos(dlon)
-    )
+    theta = np.arctan2(np.hypot(x, y), dot)
     return theta
 
 
