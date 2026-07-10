@@ -3,14 +3,29 @@
 Calculate magnetic field transfer functions and fit a system (SECS) to observations.
 """
 
+import warnings
+
 import numpy as np
+
+
+__all__ = [
+    "SECS",
+    "J_cf",
+    "J_df",
+    "T_cf",
+    "T_df",
+    "calc_angular_distance",
+    "calc_bearing",
+]
 
 
 class SECS:
     """Spherical Elementary Current System (SECS).
 
     The algorithm is implemented directly in spherical coordinates
-    from the equations of the 1999 Amm & Viljanen paper [1]_.
+    from the equations of the 1999 Amm & Viljanen paper [1]_. The
+    magnetic field of the curl-free system is implemented from
+    Equation 2.15 of the Vanhamäki & Juusola review chapter [2]_.
 
     Parameters
     ----------
@@ -26,6 +41,10 @@ class SECS:
         continuation from the ground to the ionosphere using spherical elementary
         current systems." Earth, Planets and Space 51.6 (1999): 431-440.
         doi:10.1186/BF03352247
+    .. [2] Vanhamäki, H., and L. Juusola. "Introduction to Spherical Elementary
+        Current Systems." Ionospheric Multi-Spacecraft Analysis Tools,
+        ISSI Scientific Report Series 17 (2020): 5-33.
+        doi:10.1007/978-3-030-26732-2_2
     """
 
     def __init__(
@@ -54,13 +73,20 @@ class SECS:
         self.sec_amps = np.empty((0, self.nsec))
         self.sec_amps_var = np.empty((0, self.nsec))
 
-        # Keep some values around for cache lookups
-        self._obs_loc = None
-        self._T_obs_flat = None
-        self._pred_loc_B = None
-        self._T_pred_B = None
-        self._pred_loc_J = None
-        self._T_pred_J = None
+        # Keep some values around for cache lookups. Empty arrays are
+        # the "not computed yet" sentinels: they never compare equal to
+        # real location arrays, so the first use fills the cache.
+        self._obs_loc = np.empty((0, 3))
+        self._T_obs_flat = np.empty((0, self.nsec))
+        self._pred_loc_B = np.empty((0, 3))
+        self._T_pred_B = np.empty((0, 3, self.nsec))
+        self._pred_loc_J = np.empty((0, 3))
+        self._T_pred_J = np.empty((0, 3, self.nsec))
+
+        # Inversion operators from the most recent fit(), used to
+        # propagate amplitude covariances to prediction variances
+        self._VWU_patterns: list[np.ndarray] | None = None
+        self._pattern_index: np.ndarray | None = None
 
     @property
     def has_df(self) -> bool:
@@ -121,13 +147,21 @@ class SECS:
         else:
             raise ValueError(f"Unknown SVD filtering mode: '{mode}'")
 
+        # Never invert exactly-zero singular values. These arise when the
+        # transfer matrix has all-zero columns, e.g. curl-free SECs with
+        # observations only below the current shell where their magnetic
+        # field vanishes identically.
+        valid &= S > 0
+
         # Truncate and build VWU
         U = U[:, valid]
         S = S[valid]
         Vh = Vh[valid, :]
         W = 1.0 / S
 
-        return Vh.T @ (np.diag(W) @ U.T)
+        # Scale the rows of Vh by W via broadcasting rather than
+        # materializing the dense diagonal matrix diag(W)
+        return (Vh.T * W) @ U.T
 
     def fit(
         self,
@@ -136,6 +170,9 @@ class SECS:
         obs_std: np.ndarray | None = None,
         epsilon: float = 0.05,
         mode: str = "relative",
+        robust: str | None = None,
+        robust_maxiter: int = 20,
+        robust_tol: float = 1e-6,
     ) -> "SECS":
         """Fits the SECS to the given observations.
 
@@ -153,10 +190,11 @@ class SECS:
         obs_B: ndarray (ntimes, nobs, 3 [Bx, By, Bz])
             An array containing the measured/observed B-fields.
 
-        obs_std : ndarray (ntimes, nobs, 3 [varX, varY, varZ]), optional
-            Standard error of vector components at each observation location.
-            This can be used to weight different observations more/less heavily.
-            An infinite value eliminates the observation from the fit.
+        obs_std : ndarray (ntimes, nobs, 3 [stdX, stdY, stdZ]), optional
+            Standard error (1-sigma) of vector components at each observation
+            location. This can be used to weight different observations
+            more/less heavily. An infinite value eliminates the observation
+            from the fit.
             Default: ones(nobs, 3) equal weights
 
         epsilon : float
@@ -168,14 +206,57 @@ class SECS:
 
         mode : str
             The mode used to filter the singular values. Options are:
+
             - 'relative': filter singular values that are less than epsilon times
               the largest singular value, keep [S >= epsilon * S.max()].
             - 'variance': filter singular values that contribute to 1-epsilon of
               the total energy of the system (% total variance as a ratio).
+
             Default: 'relative'
+
+        robust : str, optional
+            Robust reweighting of the observations. A localized disturbance
+            at a single station (spikes, baseline jumps, instrument noise)
+            is inconsistent with any smooth current system this basis can
+            produce, so it shows up as a large standardized residual and is
+            automatically downweighted by iteratively reweighted least
+            squares (IRLS). Weights are applied per vector component and
+            per time step. Options are:
+
+            - None: ordinary weighted least squares (default).
+            - 'huber': Huber weights, downweights outliers gradually.
+            - 'bisquare': Tukey biweight, fully rejects gross outliers.
+
+        robust_maxiter : int
+            Maximum number of IRLS iterations. Each iteration refits every
+            time step with its own weights, so robust fits of long time
+            series cost roughly ``robust_maxiter`` times the ordinary fit.
+            Default: 20
+
+        robust_tol : float
+            Relative amplitude change used to declare IRLS convergence.
+            Default: 1e-6
         """
         if obs_loc.shape[-1] != 3:
             raise ValueError("Observation locations must have 3 columns (lat, lon, r)")
+
+        if robust not in (None, "huber", "bisquare"):
+            raise ValueError(
+                f"Unknown robust weighting: '{robust}', "
+                "options are None, 'huber', 'bisquare'"
+            )
+
+        if self.has_cf and np.any(self.sec_cf_loc[:, 2] >= obs_loc[:, 2].max()):
+            warnings.warn(
+                "Some curl-free SECs are at or above all observation "
+                "locations. The magnetic field of a curl-free SEC is "
+                "identically zero at and below its current shell "
+                "(Fukushima's theorem), so these amplitudes are not "
+                "constrained by the observations and will be set to zero. "
+                "Add observations above the current shell (e.g. satellite "
+                "data) to fit curl-free systems.",
+                stacklevel=2,
+            )
 
         if obs_B.ndim == 2:
             # Just a single snapshot given, so expand the dimensionality
@@ -195,47 +276,140 @@ class SECS:
             self._T_obs_flat = self._calc_T(obs_loc).reshape(-1, self.nsec)
             self._obs_loc = obs_loc
 
+        self._solve_amplitudes(obs_B_flat, obs_std_flat, epsilon, mode)
+
+        if robust is not None:
+            self._irls(
+                obs_B_flat,
+                obs_std_flat,
+                epsilon,
+                mode,
+                robust,
+                robust_maxiter,
+                robust_tol,
+            )
+        return self
+
+    def _solve_amplitudes(
+        self,
+        obs_B_flat: np.ndarray,
+        obs_std_flat: np.ndarray,
+        epsilon: float,
+        mode: str,
+    ) -> None:
+        """Solve for the SEC amplitudes and variances of all time steps."""
+        ntimes = len(obs_B_flat)
         # Store the fit sec_amps in the object
         self.sec_amps = np.empty((ntimes, self.nsec))
         self.sec_amps_var = np.empty((ntimes, self.nsec))
 
-        if np.allclose(obs_std_flat, obs_std_flat[0]):
-            # The SVD is the same for all time steps, so we can calculate it once
-            # and broadcast it to all time steps avoiding the for-loop below
-            VWU = self._compute_VWU(self._T_obs_flat, obs_std_flat[0], epsilon, mode)
-            self.sec_amps[:] = (obs_B_flat / obs_std_flat) @ VWU.T
+        # The SVD only depends on the uncertainty pattern, so group time
+        # steps that share an identical pattern (e.g. recurring station
+        # dropouts) and compute the SVD once per unique pattern, applying
+        # it to all matching time steps at once. With uniform uncertainties
+        # this reduces to a single SVD and one vectorized solve.
+        # Rows are grouped by their exact byte pattern, which is linear in
+        # ntimes (np.unique(axis=0) sorts rows and is much slower here).
+        pattern_index = np.empty(ntimes, dtype=np.intp)
+        patterns: list[np.ndarray] = []
+        seen: dict[bytes, int] = {}
+        for i, std_row in enumerate(obs_std_flat):
+            idx = seen.setdefault(std_row.tobytes(), len(patterns))
+            if idx == len(patterns):
+                patterns.append(std_row)
+            pattern_index[i] = idx
 
-            valid = np.isfinite(obs_std_flat[0])
-            VWU_masked = VWU[:, valid]
-            std_masked = obs_std_flat[0, valid]
-            self.sec_amps_var[:] = np.sum((VWU_masked * std_masked) ** 2, axis=1)
-        else:
-            prev_std = None
-            VWU = None
-            for i in range(ntimes):
-                if prev_std is None or not np.allclose(
-                    obs_std_flat[i], prev_std, atol=1e-12, rtol=1e-12
-                ):
-                    VWU = self._compute_VWU(
-                        self._T_obs_flat, obs_std_flat[i], epsilon, mode
-                    )
-                    prev_std = obs_std_flat[i]
+        # Keep the inversion operators around so predict() can propagate
+        # the amplitude covariance to prediction variances
+        VWU_patterns = []
+        for i, pattern_std in enumerate(patterns):
+            t_mask = pattern_index == i
+            VWU = self._compute_VWU(self._T_obs_flat, pattern_std, epsilon, mode)
+            self.sec_amps[t_mask] = (obs_B_flat[t_mask] / pattern_std) @ VWU.T
 
-                self.sec_amps[i] = VWU @ (obs_B_flat[i] / obs_std_flat[i])
+            # amps = VWU @ (B / std). With Var(B) = std**2 the scaled
+            # observations have unit variance, so Var(amps) = sum(VWU**2).
+            # Observations eliminated with infinite std have exactly zero
+            # columns in VWU and drop out automatically.
+            self.sec_amps_var[t_mask] = np.sum(VWU**2, axis=1)
+            VWU_patterns.append(VWU)
 
-                valid = np.isfinite(obs_std_flat[i])
-                VWU_masked = VWU[:, valid]
-                std_masked = obs_std_flat[i, valid]
-                self.sec_amps_var[i] = np.sum((VWU_masked * std_masked) ** 2, axis=1)
-        return self
+        self._VWU_patterns = VWU_patterns
+        self._pattern_index = pattern_index
+
+    def _irls(
+        self,
+        obs_B_flat: np.ndarray,
+        obs_std_flat: np.ndarray,
+        epsilon: float,
+        mode: str,
+        robust: str,
+        maxiter: int,
+        tol: float,
+    ) -> None:
+        """Refine the amplitudes with iteratively reweighted least squares.
+
+        Standardized residuals are scaled by a per-time-step normalized
+        median absolute deviation and mapped to weights with the Huber or
+        Tukey bisquare functions (tuning constants chosen for 95%
+        asymptotic efficiency on Gaussian data). Downweighting is applied
+        by inflating the effective standard error of each observation, so
+        the amplitude variances and prediction variances automatically
+        account for the reduced influence of the flagged observations.
+        """
+        # Tuning constants for 95% asymptotic efficiency on Gaussian data
+        c = {"huber": 1.345, "bisquare": 4.685}[robust]
+        finite = np.isfinite(obs_std_flat)
+
+        prev_amps = self.sec_amps
+        for _ in range(maxiter):
+            pred = prev_amps @ self._T_obs_flat.T
+            resid = np.where(
+                finite,
+                (obs_B_flat - pred) / np.where(finite, obs_std_flat, 1.0),
+                np.nan,
+            )
+
+            # Normalized median absolute deviation about zero of each time
+            # step. A zero scale means the fit is (numerically) perfect, in
+            # which case there are no outliers to reject.
+            with warnings.catch_warnings():
+                # All-NaN rows (fully eliminated time steps) are fine
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                scale = 1.4826 * np.nanmedian(np.abs(resid), axis=1, keepdims=True)
+            scale = np.where(scale > 0, scale, np.inf)
+
+            u = np.abs(np.where(finite, resid, 0.0)) / scale
+            if robust == "huber":
+                with np.errstate(divide="ignore"):
+                    weights = np.minimum(1.0, c / np.where(u > 0, u, np.inf))
+            else:
+                weights = np.where(u < c, (1 - (u / c) ** 2) ** 2, 0.0)
+
+            with np.errstate(divide="ignore"):
+                eff_std = obs_std_flat / weights
+
+            self._solve_amplitudes(obs_B_flat, eff_std, epsilon, mode)
+
+            amp_scale = np.max(np.abs(self.sec_amps), initial=0.0)
+            amp_change = np.max(np.abs(self.sec_amps - prev_amps), initial=0.0)
+            if amp_change <= tol * amp_scale:
+                break
+            prev_amps = self.sec_amps
 
     def fit_unit_currents(self) -> "SECS":
         """Set all SECs to a unit current amplitude."""
         self.sec_amps = np.ones((1, self.nsec))
+        self.sec_amps_var = np.zeros((1, self.nsec))
+        # No inversion took place, so there is no covariance to propagate
+        self._VWU_patterns = None
+        self._pattern_index = None
 
         return self
 
-    def predict(self, pred_loc: np.ndarray, J: bool = False) -> np.ndarray:
+    def predict(
+        self, pred_loc: np.ndarray, J: bool = False, return_var: bool = False
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """Calculate the predicted magnetic field or currents.
 
         After a set of observations has been fit to this system we can
@@ -251,11 +425,19 @@ class SECS:
             Whether to predict currents (J=True) or magnetic fields (J=False)
             Default: False (magnetic field prediction)
 
+        return_var: boolean
+            Whether to also return the variance of the predictions,
+            propagated from the full posterior covariance of the fitted
+            amplitudes (treating the obs_std passed to fit() as 1-sigma
+            standard errors of independent observations).
+            Default: False
+
         Returns
         -------
         ndarray (ntimes, npred, 3 [lat, lon, r])
             The predicted values calculated from the current amplitudes that were
-            fit to this system.
+            fit to this system. If return_var is True, a tuple of
+            (predictions, variances) with identical shapes is returned.
         """
         if pred_loc.shape[-1] != 3:
             raise ValueError("Prediction locations must have 3 columns (lat, lon, r)")
@@ -281,9 +463,34 @@ class SECS:
                 self._pred_loc_B = pred_loc
             T_pred = self._T_pred_B
 
-        return np.squeeze(np.tensordot(self.sec_amps, T_pred, (1, 2)))
+        pred = np.squeeze(np.tensordot(self.sec_amps, T_pred, (1, 2)))
+        if not return_var:
+            return pred
 
-    def predict_B(self, pred_loc: np.ndarray) -> np.ndarray:
+        if self._VWU_patterns is None or self._pattern_index is None:
+            raise ValueError(
+                "Prediction variances require amplitudes fit with fit(). "
+                "Call fit() before predicting with return_var=True."
+            )
+
+        # pred = T_pred @ amps and amps = VWU @ (B / std) with the scaled
+        # observations having unit variance, so
+        # Cov(pred) = (T_pred @ VWU) @ (T_pred @ VWU).T and the variances
+        # are the row sums of squares of M = T_pred @ VWU. The variance
+        # only depends on the uncertainty pattern, so it is computed once
+        # per pattern from the operators saved by fit().
+        npred = len(pred_loc)
+        T_pred_flat = T_pred.reshape(-1, self.nsec)
+        var = np.empty((len(self.sec_amps), npred, 3))
+        for i, VWU in enumerate(self._VWU_patterns):
+            M = T_pred_flat @ VWU
+            var[self._pattern_index == i] = np.sum(M**2, axis=1).reshape(npred, 3)
+
+        return pred, np.squeeze(var)
+
+    def predict_B(
+        self, pred_loc: np.ndarray, return_var: bool = False
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """Calculate the predicted magnetic fields.
 
         After a set of observations has been fit to this system we can
@@ -295,15 +502,22 @@ class SECS:
         pred_loc: ndarray (npred, 3 [lat, lon, r])
             An array containing the locations where the predictions are desired.
 
+        return_var: boolean
+            Whether to also return the variance of the predictions.
+            Default: False
+
         Returns
         -------
         ndarray (ntimes, npred, 3 [lat, lon, r])
             The predicted values calculated from the current amplitudes that were
-            fit to this system.
+            fit to this system. If return_var is True, a tuple of
+            (predictions, variances) with identical shapes is returned.
         """
-        return self.predict(pred_loc)
+        return self.predict(pred_loc, return_var=return_var)
 
-    def predict_J(self, pred_loc: np.ndarray) -> np.ndarray:
+    def predict_J(
+        self, pred_loc: np.ndarray, return_var: bool = False
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """Calculate the predicted currents.
 
         After a set of observations has been fit to this system we can
@@ -315,13 +529,18 @@ class SECS:
         pred_loc: ndarray (npred, 3 [lat, lon, r])
             An array containing the locations where the predictions are desired.
 
+        return_var: boolean
+            Whether to also return the variance of the predictions.
+            Default: False
+
         Returns
         -------
         ndarray (ntimes, npred, 3 [lat, lon, r])
             The predicted values calculated from the current amplitudes that were
-            fit to this system.
+            fit to this system. If return_var is True, a tuple of
+            (predictions, variances) with identical shapes is returned.
         """
-        return self.predict(pred_loc, J=True)
+        return self.predict(pred_loc, J=True, return_var=return_var)
 
     def _calc_T(self, obs_loc: np.ndarray) -> np.ndarray:
         """Calculate the T transfer matrix.
@@ -482,6 +701,14 @@ def T_cf(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
     The transfer function goes from SEC location to observation location
     and assumes unit current SECs at the given locations.
 
+    The curl-free SEC, together with its associated radial field-aligned
+    currents (FACs), produces no magnetic field at or below its current
+    shell (Fukushima's theorem generalized to a sphere) and a purely
+    azimuthal magnetic field above it. A positive scaling factor
+    corresponds to a FAC flowing into the ionosphere at the SEC pole,
+    horizontal sheet currents directed away from the pole, and uniformly
+    distributed FACs flowing out of the ionosphere elsewhere.
+
     Parameters
     ----------
     obs_loc : ndarray (nobs, 3 [lat, lon, r])
@@ -495,9 +722,39 @@ def T_cf(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
     ndarray (nobs, 3, nsec)
         The T transfer matrix.
     """
-    raise NotImplementedError(
-        "Curl Free Magnetic Field Transfers are not implemented yet."
+    nobs = len(obs_loc)
+    nsec = len(sec_loc)
+
+    obs_r = obs_loc[:, 2][:, np.newaxis]
+    sec_r = sec_loc[:, 2][np.newaxis, :]
+
+    theta, alpha = _calc_angular_distance_and_bearing(obs_loc[:, :2], sec_loc[:, :2])
+
+    mu0_over_4pi = 1e-7
+
+    # Vanhamäki & Juusola: Equation 2.15
+    # B_phi = -mu0 I0 / (4 pi r) cot(theta / 2) above the current shell
+    tan_theta2 = np.tan(theta / 2.0)
+    B_phi = np.divide(
+        1.0,
+        tan_theta2,
+        out=np.ones_like(tan_theta2) * np.inf,
+        where=tan_theta2 != 0.0,
     )
+    B_phi *= -mu0_over_4pi / obs_r
+
+    # Amm & Viljanen: Section 2 / Vanhamäki & Juusola: Equation 2.15
+    # No magnetic field at or below the current shell (Fukushima's theorem)
+    B_phi = np.where(obs_r > sec_r, B_phi, 0.0)
+
+    # Transform back to Bx, By, Bz at each local point
+    T = np.empty((nobs, 3, nsec))
+    # alpha == angle (from cartesian x-axis (By), going towards y-axis (Bx))
+    T[:, 0, :] = -B_phi * np.cos(alpha)
+    T[:, 1, :] = B_phi * np.sin(alpha)
+    T[:, 2, :] = 0.0
+
+    return T
 
 
 def J_df(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
@@ -552,10 +809,18 @@ def J_df(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
 
 
 def J_cf(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
-    """Calculate the curl free magnetic field transfer function.
+    """Calculate the curl free current density transfer function.
 
     The transfer function goes from SEC location to observation location
     and assumes unit current SECs at the given locations.
+
+    A positive scaling factor corresponds to a field-aligned current (FAC)
+    flowing into the ionosphere at the SEC pole, horizontal sheet currents
+    directed away from the pole, and uniformly distributed FACs flowing out
+    of the ionosphere on the rest of the shell so that the net FAC over the
+    whole shell is zero (Amm & Viljanen, Fig. 1). Currents are only
+    returned on the SEC shell itself; the radial components represent the
+    FACs attached to the shell at that point.
 
     Parameters
     ----------
@@ -588,10 +853,13 @@ def J_cf(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
         out=np.ones_like(tan_theta2) * np.inf,
         where=tan_theta2 != 0,
     )
-    # Uniformly directed FACs around the globe, except the pole
-    # Integrated over the globe, this will lead to zero
-    J_r = -np.ones(J_theta.shape) / (4 * np.pi * sec_r**2)
-    J_r[theta == 0.0] = 1.0
+    # Uniformly distributed FACs flowing out of the ionosphere (upward)
+    # around the globe return the line current flowing into the ionosphere
+    # at the pole, so the net FAC integrated over the globe is zero.
+    # The pole entry is a finite marker for the delta-function line current
+    # flowing into the ionosphere (downward).
+    J_r = np.ones(J_theta.shape) / (4 * np.pi * sec_r**2)
+    J_r[theta == 0.0] = -1.0
 
     # Only valid on the SEC shell
     J_theta[sec_r != obs_r] = 0.0
@@ -649,8 +917,18 @@ def _calc_angular_distance_and_bearing(
     cos_dlon = np.cos(dlon)
     sin_dlon = np.sin(dlon)
 
+    # x, y, and dot below are the components of the Vincenty formula for
+    # angular distance. Unlike the law-of-cosines + arccos form (which this
+    # replaced), it has no restricted input domain, so it can't return NaN
+    # for coincident points due to floating-point round-off, and it stays
+    # accurate when the two points are close together, where arccos loses
+    # precision rapidly. x and y also double as the bearing components below.
+    x = cos_lat2 * sin_dlon
+    y = cos_lat1 * sin_lat2 - sin_lat1 * cos_lat2 * cos_dlon
+    dot = sin_lat1 * sin_lat2 + cos_lat1 * cos_lat2 * cos_dlon
+
     # theta == angular distance between two points
-    theta = np.arccos(sin_lat1 * sin_lat2 + cos_lat1 * cos_lat2 * cos_dlon)
+    theta = np.arctan2(np.hypot(x, y), dot)
 
     # alpha == bearing, going from point1 to point2
     #          angle (from cartesian x-axis (By), going towards y-axis (Bx))
@@ -659,8 +937,6 @@ def _calc_angular_distance_and_bearing(
     # SEC coordinates are: theta (colatitude (+ away from North Pole)),
     #                      phi (longitude, + east), r (+ out)
     # Obs coordinates are: X (+ north), Y (+ east), Z (+ down)
-    x = cos_lat2 * sin_dlon
-    y = cos_lat1 * sin_lat2 - sin_lat1 * cos_lat2 * cos_dlon
     alpha = np.pi / 2 - np.arctan2(x, y)
 
     return theta, alpha
@@ -690,12 +966,26 @@ def calc_angular_distance(latlon1: np.ndarray, latlon2: np.ndarray) -> np.ndarra
     lat2 = np.deg2rad(latlon2[:, 0])[np.newaxis, :]
     lon2 = np.deg2rad(latlon2[:, 1])[np.newaxis, :]
 
+    cos_lat1 = np.cos(lat1)
+    sin_lat1 = np.sin(lat1)
+    cos_lat2 = np.cos(lat2)
+    sin_lat2 = np.sin(lat2)
+
     dlon = lon2 - lon1
+    cos_dlon = np.cos(dlon)
+    sin_dlon = np.sin(dlon)
+
+    # Vincenty formula: unlike the law-of-cosines + arccos form (which this
+    # replaced), it has no restricted input domain, so it can't return NaN
+    # for coincident points due to floating-point round-off, and it stays
+    # accurate when the two points are close together, where arccos loses
+    # precision rapidly.
+    x = cos_lat2 * sin_dlon
+    y = cos_lat1 * sin_lat2 - sin_lat1 * cos_lat2 * cos_dlon
+    dot = sin_lat1 * sin_lat2 + cos_lat1 * cos_lat2 * cos_dlon
 
     # theta == angular distance between two points
-    theta = np.arccos(
-        np.sin(lat1) * np.sin(lat2) + np.cos(lat1) * np.cos(lat2) * np.cos(dlon)
-    )
+    theta = np.arctan2(np.hypot(x, y), dot)
     return theta
 
 

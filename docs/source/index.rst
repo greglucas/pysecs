@@ -10,6 +10,7 @@ divergence free interpolation of a vector field.
    :maxdepth: 1
 
    installation
+   theory
    examples/index
    reference/index
    development/index

@@ -11,6 +11,12 @@ pysecs is an open-source library for calculating Spherical Elementary Current Sy
 
 - Based upon the [scikit-learn](http://scikit-learn.org/) framework with `fit()` and `predict()` methods.
 - The only dependency is [NumPy](http://www.numpy.org/). It is built using fast broadcasting techniques to provide highly scalable calculations.
+- Divergence-free and curl-free systems, including the curl-free magnetic
+  field for observations above the current shell (satellite altitudes).
+- Uncertainty propagation: amplitude variances and prediction variance maps
+  (`predict(..., return_var=True)`).
+- Robust fitting (`fit(..., robust='huber'|'bisquare')`) that automatically
+  downweights localized single-station disturbances.
 
 ## Examples
 
@@ -75,6 +81,17 @@ Journal of geomagnestism and geoelectricity 49.7 (1997): 947-955. doi:10.5636/jg
 Amm, O., and A. Viljanen. "Ionospheric disturbance magnetic field continuation
 from the ground to the ionosphere using spherical elementary current systems."
 Earth, Planets and Space 51.6 (1999): 431-440. doi:10.1186/BF03352247
+```
+
+### [Review Chapter (curl-free magnetic field)](https://doi.org/10.1007/978-3-030-26732-2_2)
+
+The magnetic field of the curl-free system (Equation 2.15) implemented in this
+package is given in this review chapter.
+
+```bibtex
+Vanhamäki, H., and L. Juusola. "Introduction to Spherical Elementary Current Systems."
+Ionospheric Multi-Spacecraft Analysis Tools, ISSI Scientific Report Series 17 (2020): 5-33.
+doi:10.1007/978-3-030-26732-2_2
 ```
 
 ## Problems or Questions

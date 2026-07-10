@@ -262,9 +262,10 @@ def test_curl_free_current_magnitudes():
 
     J = np.squeeze(pysecs.J_cf(obs_latlonr, sec_latlonr))
 
-    # Make sure all radial components are oppositely directed
+    # The distributed return FACs flow out of the ionosphere (upward),
+    # which is negative in the Z (down) coordinate
     radial_component = 1.0 / (4 * np.pi * sec_r**2)
-    assert np.all(J[:, 2] == radial_component)
+    assert np.all(J[:, 2] == -radial_component)
 
     # All x components should be zero (angles goes around the equator and all
     # quantities should be parallel to that)
@@ -284,20 +285,118 @@ def test_curl_free_current_magnitudes():
     assert_allclose(J_test, J[:, 1], atol=1e-16)
 
 
-def test_curl_free_magnetic_magnitudes():
-    "Make sure the curl free magnetic amplitudes are correct."
-    # TODO: Update this test once T_cf is implemented
-    # Place the SEC at the North Pole
+def test_curl_free_pole_fac_direction():
+    "The line current at the SEC pole flows into the ionosphere (downward)."
     sec_r = R_EARTH + 100
     sec_latlonr = np.array([[0.0, 0.0, sec_r]])
+    # Observation exactly at the SEC pole on the shell
+    obs_latlonr = np.array([[0.0, 0.0, sec_r]])
+
+    J = np.squeeze(pysecs.J_cf(obs_latlonr, sec_latlonr))
+    # Marker value for the delta-function line current: positive Z (down)
+    assert J[2] == 1.0
+
+
+def test_curl_free_magnetic_below_shell():
+    "The CF magnetic field vanishes at and below the shell (Fukushima)."
+    sec_r = R_EARTH + 100e3
+    sec_latlonr = np.array([[30.0, 40.0, sec_r]])
+    angles = np.linspace(0, 180, 19)
+    obs_latlonr = np.zeros((len(angles), 3))
+    obs_latlonr[:, 1] = angles
+
+    # On the ground and on the current shell itself
+    for obs_r in (R_EARTH, sec_r):
+        obs_latlonr[:, 2] = obs_r
+        T = pysecs.T_cf(obs_latlonr, sec_latlonr)
+        assert np.all(T == 0.0)
+
+
+def test_curl_free_magnetic_magnitudes_obs_over():
+    "Make sure the curl free magnetic amplitudes are correct above the shell."
+    # Place the SEC pole on the equator
+    sec_r = R_EARTH
+    sec_latlonr = np.array([[0.0, 0.0, sec_r]])
     # Going out in an angle from the SEC (in longitude)
-    angles = np.linspace(0.1, 180)
+    angles = np.linspace(0.1, 179.9)
+    obs_r = R_EARTH + 100e3
     obs_latlonr = np.zeros((*angles.shape, 3))
     obs_latlonr[:, 1] = angles
-    obs_latlonr[:, 2] = sec_r
+    obs_latlonr[:, 2] = obs_r
 
-    with pytest.raises(NotImplementedError, match="Curl Free Magnetic"):
-        pysecs.T_cf(obs_latlonr, sec_latlonr)
+    B = np.squeeze(pysecs.T_cf(obs_latlonr, sec_latlonr))
+
+    # The field is purely azimuthal about the SEC pole: for observations
+    # due east of the pole that is the +/- x (north/south) direction
+    assert np.all(B[:, 2] == 0.0)
+    assert_allclose(np.zeros(angles.shape), B[:, 1], atol=1e-25)
+
+    # Vanhamäki & Juusola: Equation 2.15
+    mu0 = 4 * np.pi * 1e-7
+    theta = np.deg2rad(angles)
+    B_phi = -mu0 / (4 * np.pi * obs_r) / np.tan(theta / 2.0)
+    # phi-hat at observations due east of the pole points north (+x)
+    assert_allclose(B_phi, B[:, 0])
+
+
+def test_curl_free_magnetic_directions():
+    "The CF magnetic field circulates clockwise around a downward FAC."
+    # Place the SEC at the equator
+    sec_r = R_EARTH + 100
+    sec_latlonr = np.array([[0.0, 0.0, sec_r]])
+    # Going around in a circle from the point, above the shell
+    obs_r = sec_r + 100e3
+    obs_latlonr = np.array(
+        [[5.0, 0.0, obs_r], [0.0, 5.0, obs_r], [-5, 0.0, obs_r], [0.0, -5.0, obs_r]]
+    )
+
+    B = np.squeeze(pysecs.T_cf(obs_latlonr, sec_latlonr))
+
+    angles = np.arctan2(B[:, 0], B[:, 1])
+    # A positive amplitude has a downward line current at the pole, so the
+    # field circulates clockwise viewed from above:
+    # eastward, southward, westward, northward
+    expected_angles = np.deg2rad([0.0, -90.0, 180.0, 90.0])
+    assert_allclose(angles, expected_angles, rtol=1e-10, atol=1e-10)
+
+
+def test_curl_free_fit_ground_only_warns():
+    "Ground-only observations cannot constrain curl-free amplitudes."
+    sec_loc = [[1.0, 0.0, R_EARTH + 1e6], [-1.0, 0.0, R_EARTH + 1e6]]
+    secs = pysecs.SECS(sec_cf_loc=sec_loc)
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.array([[1.0, 1.0, 1.0]])
+
+    with pytest.warns(UserWarning, match="Fukushima"):
+        secs.fit(obs_loc, obs_B)
+
+    # The zero singular values are filtered out, leaving zero amplitudes
+    # rather than infinities/NaNs
+    assert np.all(np.isfinite(secs.sec_amps))
+    assert_allclose(np.zeros((1, 2)), secs.sec_amps)
+
+
+def test_curl_free_fit_mixed_ground_only():
+    "A mixed df+cf fit from the ground matches the df-only fit."
+    df_loc = [[1.0, 0.0, R_EARTH + 1e6], [-1.0, 0.0, R_EARTH + 1e6]]
+    cf_loc = [[0.0, 1.0, R_EARTH + 1e6], [0.0, -1.0, R_EARTH + 1e6]]
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.array([[1.0, 1.0, 1.0]])
+
+    secs_df = pysecs.SECS(sec_df_loc=df_loc)
+    secs_df.fit(obs_loc, obs_B)
+
+    secs_mixed = pysecs.SECS(sec_df_loc=df_loc, sec_cf_loc=cf_loc)
+    with pytest.warns(UserWarning, match="Fukushima"):
+        secs_mixed.fit(obs_loc, obs_B)
+
+    # cf amplitudes unconstrained -> zero, df amplitudes unchanged
+    assert_allclose(np.zeros((1, 2)), secs_mixed.sec_amps[:, 2:])
+    assert_allclose(secs_df.sec_amps, secs_mixed.sec_amps[:, :2])
+
+    # Ground magnetic field predictions also match
+    pred_loc = np.array([[0.5, 0.5, R_EARTH]])
+    assert_allclose(secs_df.predict_B(pred_loc), secs_mixed.predict_B(pred_loc))
 
 
 def test_empty_object():
@@ -538,7 +637,7 @@ def test_predictJ_cf():
     # Move up to the current sheet
     pred_loc = np.array([[0, 0, R_EARTH + 1e6]])
     J_pred = secs.predict(pred_loc, J=True)
-    expected = np.array([0, 0, 1.169507e-14])
+    expected = np.array([0, 0, -1.169507e-14])
     assert_allclose(expected, J_pred, rtol=1e-6, atol=1e-10)
 
     # Use the predict_J function call directly
@@ -570,7 +669,7 @@ def test_predictJ_cf_df():
     # Move up to the current sheet
     pred_loc = np.array([[0, 0, R_EARTH + 1e6]])
     J_pred = secs.predict(pred_loc, J=True)
-    expected = np.array([0, 0, 1.169507e-14])
+    expected = np.array([0, 0, -1.169507e-14])
     assert_allclose(expected, J_pred, rtol=1e-6, atol=1e-10)
 
     # Use the predict_J function call directly
@@ -625,3 +724,189 @@ def test_changing_obs_shape():
     assert pred.shape == (ntimes, npred, 3)
     pred = secs.predict(pred_locs[:-1])
     assert pred.shape == (ntimes, npred - 1, 3)
+
+
+def test_sec_amps_var_scales_with_std():
+    """Uniformly doubling obs_std doubles the amplitude standard error."""
+    sec_loc = [[1.0, 0.0, R_EARTH + 1e6], [-1.0, 0.0, R_EARTH + 1e6]]
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((1, 1, 3))
+
+    secs1 = pysecs.SECS(sec_df_loc=sec_loc)
+    secs1.fit(obs_loc, obs_B, obs_std=np.ones_like(obs_B))
+    secs2 = pysecs.SECS(sec_df_loc=sec_loc)
+    secs2.fit(obs_loc, obs_B, obs_std=2 * np.ones_like(obs_B))
+
+    # Uniform weighting does not change the amplitudes themselves
+    assert_allclose(secs1.sec_amps, secs2.sec_amps)
+    # ... but the amplitude variance scales with the observation variance
+    assert_allclose(4 * secs1.sec_amps_var, secs2.sec_amps_var)
+
+
+def test_sec_amps_var_analytic():
+    """The amplitude variance matches the analytic least-squares covariance."""
+    sec_loc = np.array([[2.0, 1.0, R_EARTH + 1e5], [-1.0, -2.0, R_EARTH + 1e5]])
+    obs_loc = np.array([[0.5, 0.5, R_EARTH], [-1.5, 1.0, R_EARTH]])
+    obs_B = np.array([[[10.0, -5.0, 3.0], [2.0, 8.0, -1.0]]]) * 1e-9
+    obs_std = np.array([[[1.0, 2.0, 3.0], [0.5, 1.5, 2.5]]]) * 1e-9
+
+    secs = pysecs.SECS(sec_df_loc=sec_loc)
+    secs.fit(obs_loc, obs_B, obs_std=obs_std, epsilon=0)
+
+    # Unweighted design matrix and the generalized least squares covariance
+    A = pysecs.T_df(obs_loc, sec_loc).reshape(-1, 2)
+    Cinv = np.diag(1.0 / obs_std.ravel() ** 2)
+    cov = np.linalg.inv(A.T @ Cinv @ A)
+    amps = cov @ A.T @ Cinv @ obs_B.ravel()
+
+    assert_allclose(amps, secs.sec_amps[0], rtol=1e-8)
+    assert_allclose(np.diag(cov), secs.sec_amps_var[0], rtol=1e-8)
+
+
+def test_variance_montecarlo():
+    """Amplitude and prediction variances match Monte Carlo statistics."""
+    rng = np.random.default_rng(7)
+    lat_g, lon_g = np.meshgrid([-2.0, 2.0], [-2.0, 2.0], indexing="ij")
+    sec_locs = np.column_stack(
+        [lat_g.ravel(), lon_g.ravel(), np.full(4, R_EARTH + 110e3)]
+    )
+    obs_locs = np.column_stack(
+        [rng.uniform(-3, 3, 4), rng.uniform(-3, 3, 4), np.full(4, R_EARTH)]
+    )
+    true_amps = rng.normal(0, 1e4, 4)
+    B_true = np.tensordot(true_amps, pysecs.T_df(obs_locs, sec_locs), (0, 2))
+
+    ndraws = 20000
+    std = rng.uniform(1e-9, 3e-9, (4, 3))
+    obs_B = B_true[np.newaxis] + rng.normal(0, 1, (ndraws, 4, 3)) * std
+    obs_std = np.broadcast_to(std, obs_B.shape)
+
+    secs = pysecs.SECS(sec_df_loc=sec_locs)
+    secs.fit(obs_locs, obs_B, obs_std=obs_std, epsilon=1e-8)
+
+    # Empirical variance of the fitted amplitudes across the draws
+    assert_allclose(secs.sec_amps.var(axis=0), secs.sec_amps_var[0], rtol=0.1)
+
+    pred_locs = np.column_stack(
+        [rng.uniform(-3, 3, 5), rng.uniform(-3, 3, 5), np.full(5, R_EARTH)]
+    )
+    pred, var = secs.predict_B(pred_locs, return_var=True)
+    assert var.shape == pred.shape
+    assert_allclose(pred.var(axis=0), var[0], rtol=0.1)
+
+
+def test_predict_var_patterns():
+    """Prediction variances follow the per-timestep uncertainty patterns."""
+    sec_loc = [[1.0, 0.0, R_EARTH + 1e6], [-1.0, 0.0, R_EARTH + 1e6]]
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((2, 1, 3))
+    obs_std = np.ones_like(obs_B)
+    # Eliminate the z component in the second timestep
+    obs_std[1, :, 2] = np.inf
+
+    secs = pysecs.SECS(sec_df_loc=sec_loc)
+    secs.fit(obs_loc, obs_B, obs_std=obs_std)
+
+    pred_loc = np.array([[0.5, 0.5, R_EARTH], [5.0, -3.0, R_EARTH]])
+    pred, var = secs.predict_B(pred_loc, return_var=True)
+    assert pred.shape == (2, 2, 3)
+    assert var.shape == (2, 2, 3)
+    assert np.all(var > 0)
+    # Different uncertainty patterns produce different variances
+    assert not np.allclose(var[0], var[1])
+
+    # Variance requests require a proper fit
+    secs.fit_unit_currents()
+    with pytest.raises(ValueError, match="Prediction variances"):
+        secs.predict_B(pred_loc, return_var=True)
+
+
+def _spike_test_system():
+    """A well-conditioned df system with a station spike at one time step."""
+    rng = np.random.default_rng(3)
+    lat_g, lon_g = np.meshgrid(
+        np.linspace(-3, 3, 4), np.linspace(-3, 3, 4), indexing="ij"
+    )
+    sec_locs = np.column_stack(
+        [lat_g.ravel(), lon_g.ravel(), np.full(16, R_EARTH + 110e3)]
+    )
+    true_amps = rng.normal(0, 1e4, 16)
+    nobs = 12
+    obs_locs = np.column_stack(
+        [rng.uniform(-4, 4, nobs), rng.uniform(-4, 4, nobs), np.full(nobs, R_EARTH)]
+    )
+    B_true = np.tensordot(true_amps, pysecs.T_df(obs_locs, sec_locs), (0, 2))
+    B_scale = np.max(np.abs(B_true))
+
+    obs_B = B_true[np.newaxis] + rng.normal(0, 0.005 * B_scale, (3, nobs, 3))
+    # A large localized disturbance at one station in the middle time step
+    obs_B[1, 0, :] += 50 * B_scale
+
+    pred_locs = np.column_stack(
+        [rng.uniform(-3, 3, 20), rng.uniform(-3, 3, 20), np.full(20, R_EARTH)]
+    )
+    B_pred_true = np.tensordot(true_amps, pysecs.T_df(pred_locs, sec_locs), (0, 2))
+    return sec_locs, obs_locs, obs_B, pred_locs, B_pred_true, B_scale
+
+
+@pytest.mark.parametrize("robust", ["huber", "bisquare"])
+def test_fit_robust_rejects_station_spike(robust):
+    """IRLS keeps a single-station spike from contaminating the whole map."""
+    sec_locs, obs_locs, obs_B, pred_locs, B_pred_true, B_scale = _spike_test_system()
+
+    plain = pysecs.SECS(sec_df_loc=sec_locs)
+    plain.fit(obs_locs, obs_B, epsilon=1e-8)
+    err_plain = (
+        np.max(np.abs(plain.predict_B(pred_locs) - B_pred_true), axis=(1, 2)) / B_scale
+    )
+    # The spike leaks into the entire spatial solution of that time step
+    assert err_plain[1] > 1.0
+
+    secs = pysecs.SECS(sec_df_loc=sec_locs)
+    secs.fit(obs_locs, obs_B, epsilon=1e-8, robust=robust)
+    err_robust = (
+        np.max(np.abs(secs.predict_B(pred_locs) - B_pred_true), axis=(1, 2)) / B_scale
+    )
+    # The spiked time step recovers to the noise level of the clean data
+    assert err_robust[1] < 0.05
+    # The clean time steps stay at their ordinary accuracy
+    assert err_robust[0] < 0.1
+    assert err_robust[2] < 0.1
+
+
+def test_fit_robust_clean_data_unchanged():
+    """Robust fitting on clean data reproduces the ordinary fit."""
+    sec_locs, obs_locs, obs_B, pred_locs, _, _ = _spike_test_system()
+    obs_B = obs_B[[0]]  # single clean time step
+
+    plain = pysecs.SECS(sec_df_loc=sec_locs)
+    plain.fit(obs_locs, obs_B, epsilon=1e-8)
+    robust = pysecs.SECS(sec_df_loc=sec_locs)
+    robust.fit(obs_locs, obs_B, epsilon=1e-8, robust="huber")
+
+    pred_plain = plain.predict_B(pred_locs)
+    pred_robust = robust.predict_B(pred_locs)
+    scale = np.max(np.abs(pred_plain))
+    assert_allclose(pred_robust, pred_plain, atol=0.05 * scale)
+
+
+def test_fit_robust_respects_eliminated_observations():
+    """Observations eliminated with infinite std stay eliminated under IRLS."""
+    sec_locs, obs_locs, obs_B, _, _, _ = _spike_test_system()
+    obs_std = np.ones_like(obs_B)
+    # Eliminate the spiked station entirely
+    obs_std[:, 0, :] = np.inf
+
+    secs = pysecs.SECS(sec_df_loc=sec_locs)
+    secs.fit(obs_locs, obs_B, obs_std=obs_std, epsilon=1e-8, robust="bisquare")
+    assert np.all(np.isfinite(secs.sec_amps))
+    assert np.all(np.isfinite(secs.sec_amps_var))
+
+
+def test_fit_robust_bad_name():
+    """Unknown robust weighting names raise an error."""
+    secs = pysecs.SECS(sec_df_loc=[[1.0, 0.0, R_EARTH + 1e6]])
+    obs_loc = np.array([[0, 0, R_EARTH]])
+    obs_B = np.ones((1, 1, 3))
+    with pytest.raises(ValueError, match="Unknown robust weighting"):
+        secs.fit(obs_loc, obs_B, robust="tukey")
