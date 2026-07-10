@@ -1,0 +1,6 @@
+﻿pysecs.make\_image\_grid
+========================
+
+.. currentmodule:: pysecs
+
+.. autofunction:: make_image_grid

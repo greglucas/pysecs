@@ -72,6 +72,23 @@ This is a collection of examples to demonstrate how to use pysecs.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Choosing a SECS grid by hand means picking a spacing, a padding margin around the stations, and checking that no pole lands on top of a station. pysecs.SECS.from_observations (built on pysecs.make_grid) automates this from the observation network alone: the spacing defaults to the median nearest-neighbor station separation and the grid is padded several cells beyond the station footprint so that currents just outside the network do not alias onto the grid edges.">
+
+.. only:: html
+
+  .. image:: /examples/images/thumb/sphx_glr_plot_auto_grid_thumb.png
+    :alt:
+
+  :doc:`/examples/plot_auto_grid`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Automatic SECS grid generation</div>
+    </div>
+
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="Ground magnetometers see both the ionospheric (external) currents and the telluric currents induced inside the Earth (internal). Placing divergence-free SECS on two shells -- one in the ionosphere and one below the ground -- separates the two contributions, as suggested in the conclusions of Amm and Viljanen (1999). All three magnetic field components are needed for the separation.">
 
 .. only:: html
@@ -151,6 +168,7 @@ This is a collection of examples to demonstrate how to use pysecs.
    /examples/plot_B_curl_free
    /examples/plot_B_divergence_free
    /examples/plot_epsilon_selection
+   /examples/plot_auto_grid
    /examples/plot_internal_external
    /examples/plot_robust_kalman
    /examples/plot_J_surface

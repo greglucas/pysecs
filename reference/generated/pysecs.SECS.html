@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>pysecs.SECS &#8212; pysecs 0.1.0.dev1+unknown.g51212d8cb documentation</title>
+    <title>pysecs.SECS &#8212; pysecs 0.1.0.dev1+unknown.g2564bf05f documentation</title>
   
   
   
@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
 
-    <script src="../../_static/documentation_options.js?v=6a3e9991"></script>
+    <script src="../../_static/documentation_options.js?v=debece79"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
@@ -54,7 +54,7 @@
     <link rel="prev" title="API reference" href="../index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.1.0.dev1+unknown.g51212d8cb" />
+  <meta name="docsearch:version" content="0.1.0.dev1+unknown.g2564bf05f" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -126,8 +126,8 @@
       
     
     
-    <img src="../../_static/pysecs.png" class="logo__image only-light" alt="pysecs 0.1.0.dev1+unknown.g51212d8cb documentation - Home"/>
-    <img src="../../_static/pysecs.png" class="logo__image only-dark pst-js-only" alt="pysecs 0.1.0.dev1+unknown.g51212d8cb documentation - Home"/>
+    <img src="../../_static/pysecs.png" class="logo__image only-light" alt="pysecs 0.1.0.dev1+unknown.g2564bf05f documentation - Home"/>
+    <img src="../../_static/pysecs.png" class="logo__image only-dark pst-js-only" alt="pysecs 0.1.0.dev1+unknown.g2564bf05f documentation - Home"/>
   
   
 </a></div>
@@ -368,6 +368,7 @@
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="pysecs.SECS.fit.html">pysecs.SECS.fit</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pysecs.SECS.fit_unit_currents.html">pysecs.SECS.fit_unit_currents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pysecs.SECS.from_observations.html">pysecs.SECS.from_observations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pysecs.SECS.predict.html">pysecs.SECS.predict</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pysecs.SECS.predict_B.html">pysecs.SECS.predict_B</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pysecs.SECS.predict_J.html">pysecs.SECS.predict_J</a></li>
@@ -381,6 +382,10 @@
 <li class="toctree-l1"><a class="reference internal" href="pysecs.KalmanSECS.predict.html">pysecs.KalmanSECS.predict</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pysecs.KalmanSECS.predict_B.html">pysecs.KalmanSECS.predict_B</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pysecs.KalmanSECS.predict_J.html">pysecs.KalmanSECS.predict_J</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="pysecs.make_grid.html">pysecs.make_grid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pysecs.make_image_grid.html">pysecs.make_image_grid</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="pysecs.T_df.html">pysecs.T_df</a></li>
@@ -501,13 +506,16 @@ doi:10.1007/978-3-030-26732-2_2</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="pysecs.SECS.fit_unit_currents.html#pysecs.SECS.fit_unit_currents" title="pysecs.SECS.fit_unit_currents"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_unit_currents</span></code></a>()</p></td>
 <td><p>Set all SECs to a unit current amplitude.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="pysecs.SECS.predict.html#pysecs.SECS.predict" title="pysecs.SECS.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(pred_loc[, J, return_var])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="pysecs.SECS.from_observations.html#pysecs.SECS.from_observations" title="pysecs.SECS.from_observations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_observations</span></code></a>(obs_loc, r_shell[, ...])</p></td>
+<td><p>Build a SECS with an automatically generated grid.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pysecs.SECS.predict.html#pysecs.SECS.predict" title="pysecs.SECS.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(pred_loc[, J, return_var])</p></td>
 <td><p>Calculate the predicted magnetic field or currents.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="pysecs.SECS.predict_B.html#pysecs.SECS.predict_B" title="pysecs.SECS.predict_B"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_B</span></code></a>(pred_loc[, return_var])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="pysecs.SECS.predict_B.html#pysecs.SECS.predict_B" title="pysecs.SECS.predict_B"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_B</span></code></a>(pred_loc[, return_var])</p></td>
 <td><p>Calculate the predicted magnetic fields.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="pysecs.SECS.predict_J.html#pysecs.SECS.predict_J" title="pysecs.SECS.predict_J"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_J</span></code></a>(pred_loc[, return_var])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="pysecs.SECS.predict_J.html#pysecs.SECS.predict_J" title="pysecs.SECS.predict_J"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_J</span></code></a>(pred_loc[, return_var])</p></td>
 <td><p>Calculate the predicted currents.</p></td>
 </tr>
 </tbody>

@@ -1,0 +1,6 @@
+﻿pysecs.SECS.from\_observations
+==============================
+
+.. currentmodule:: pysecs
+
+.. automethod:: SECS.from_observations
