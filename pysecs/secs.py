@@ -147,9 +147,7 @@ class SECS:
             padding=padding,
             min_distance=min_distance,
         )
-        return cls(
-            sec_df_loc=grid if df else None, sec_cf_loc=grid if cf else None
-        )
+        return cls(sec_df_loc=grid if df else None, sec_cf_loc=grid if cf else None)
 
     @property
     def has_df(self) -> bool:

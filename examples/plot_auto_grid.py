@@ -32,8 +32,10 @@ obs_loc = np.column_stack([obs_lat, obs_lon, np.full(nobs, R_E)])
 # A synthetic "true" current system on a fine grid, used to generate
 # synthetic station observations
 truth_grid = make_grid(obs_loc, R_I, spacing=1.0)
-truth_amps = 1e4 * np.exp(-(((truth_grid[:, 0] - 57) / 6) ** 2)) * np.cos(
-    np.deg2rad(truth_grid[:, 1]) * 3
+truth_amps = (
+    1e4
+    * np.exp(-(((truth_grid[:, 0] - 57) / 6) ** 2))
+    * np.cos(np.deg2rad(truth_grid[:, 1]) * 3)
 )
 B_obs = np.tensordot(truth_amps, T_df(obs_loc, truth_grid), (0, 2))
 
