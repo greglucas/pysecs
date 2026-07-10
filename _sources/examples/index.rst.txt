@@ -21,6 +21,23 @@ This is a collection of examples to demonstrate how to use pysecs.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="The magnetic field of a curl-free SECS (with its associated radial field-aligned currents) is identically zero at and below the current shell -- Fukushima&#x27;s theorem -- which is why ground magnetometers can never constrain curl-free amplitudes. Above the shell the field is purely azimuthal (Vanhamäki and Juusola 2020, Equation 2.15). This example shows the angular profile at satellite altitude and on the ground.">
+
+.. only:: html
+
+  .. image:: /examples/images/thumb/sphx_glr_plot_B_curl_free_thumb.png
+    :alt:
+
+  :doc:`/examples/plot_B_curl_free`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Curl free magnetic field</div>
+    </div>
+
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the resulting angular profile of an SECS pole placed at the north pole. Figure 2 from Amm and Viljanen 1999.">
 
 .. only:: html
@@ -33,6 +50,40 @@ This is a collection of examples to demonstrate how to use pysecs.
 .. raw:: html
 
       <div class="sphx-glr-thumbnail-title">Divergence free magnetic field</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="The epsilon parameter of pysecs.SECS.fit controls how many singular values are kept in the inversion: too small and the fit chases noise, too large and real structure is smoothed away. Leave-one-out cross-validation gives an objective way to choose it: hold out one station, fit the rest, and measure the prediction error at the held-out station.">
+
+.. only:: html
+
+  .. image:: /examples/images/thumb/sphx_glr_plot_epsilon_selection_thumb.png
+    :alt:
+
+  :doc:`/examples/plot_epsilon_selection`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Choosing epsilon with cross-validation</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Ground magnetometers see both the ionospheric (external) currents and the telluric currents induced inside the Earth (internal). Placing divergence-free SECS on two shells -- one in the ionosphere and one below the ground -- separates the two contributions, as suggested in the conclusions of Amm and Viljanen (1999). All three magnetic field components are needed for the separation.">
+
+.. only:: html
+
+  .. image:: /examples/images/thumb/sphx_glr_plot_internal_external_thumb.png
+    :alt:
+
+  :doc:`/examples/plot_internal_external`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Internal / external field separation</div>
     </div>
 
 
@@ -80,7 +131,10 @@ This is a collection of examples to demonstrate how to use pysecs.
 .. toctree::
    :hidden:
 
+   /examples/plot_B_curl_free
    /examples/plot_B_divergence_free
+   /examples/plot_epsilon_selection
+   /examples/plot_internal_external
    /examples/plot_J_surface
    /examples/plot_animation
 
