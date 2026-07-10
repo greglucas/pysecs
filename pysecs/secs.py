@@ -88,6 +88,67 @@ class SECS:
         self._VWU_patterns: list[np.ndarray] | None = None
         self._pattern_index: np.ndarray | None = None
 
+    @classmethod
+    def from_observations(
+        cls,
+        obs_loc: np.ndarray,
+        r_shell: float,
+        spacing: float | tuple[float, float] | None = None,
+        padding: float | None = None,
+        min_distance: float | None = None,
+        df: bool = True,
+        cf: bool = False,
+    ) -> "SECS":
+        """Build a SECS with an automatically generated grid.
+
+        Lays out a regular divergence-free and/or curl-free grid
+        covering the given observation locations with
+        :func:`pysecs.make_grid` and constructs a SECS on it. This is a
+        convenience constructor for the common case of a single grid at
+        a single shell radius; call :func:`pysecs.make_grid` directly
+        for more control (e.g. independent df/cf grids, or an
+        additional image shell via :func:`pysecs.make_image_grid`).
+
+        Parameters
+        ----------
+        obs_loc : ndarray (nobs, 3 [lat, lon, r])
+            The observation locations the grid should cover.
+
+        r_shell : float
+            The radius of the SEC shell.
+
+        spacing, padding, min_distance :
+            Passed to :func:`pysecs.make_grid`.
+
+        df : bool
+            Whether to place divergence-free SECs on the grid.
+            Default: True
+
+        cf : bool
+            Whether to place curl-free SECs on the grid.
+            Default: False
+
+        Returns
+        -------
+        SECS
+            A SECS constructed on the generated grid.
+        """
+        if not df and not cf:
+            raise ValueError("Must request at least one of df or cf")
+
+        # Deferred to avoid a circular import: pysecs.grids imports
+        # calc_angular_distance from this module at load time.
+        from pysecs.grids import make_grid  # noqa: PLC0415
+
+        grid = make_grid(
+            obs_loc,
+            r_shell,
+            spacing=spacing,
+            padding=padding,
+            min_distance=min_distance,
+        )
+        return cls(sec_df_loc=grid if df else None, sec_cf_loc=grid if cf else None)
+
     @property
     def has_df(self) -> bool:
         """Whether this system has any divergence free currents."""

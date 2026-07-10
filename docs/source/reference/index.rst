@@ -29,6 +29,7 @@ to fit to data and then predict at any other location.
     
     SECS.fit
     SECS.fit_unit_currents
+    SECS.from_observations
     SECS.predict
     SECS.predict_B
     SECS.predict_J
@@ -52,12 +53,21 @@ Rauch-Tung-Striebel smoother.
     KalmanSECS.predict_B
     KalmanSECS.predict_J
 
+.. rubric:: Grid generation
+
+``SECS.from_observations`` builds a grid automatically with
+``make_grid``, which can also be called directly for more control.
+
+.. autosummary::
+    :toctree: generated/
+
+    make_grid
+    make_image_grid
 
 .. rubric:: Additional functions
 
 The helper functions create the geometrical transforms going from
 a pole to observation point are described below.
-
 
 .. autosummary::
     :toctree: generated/

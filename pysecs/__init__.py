@@ -9,6 +9,7 @@ surface of the Earth.
 
 import importlib.metadata
 
+from pysecs.grids import make_grid, make_image_grid  # noqa: F401
 from pysecs.kalman import KalmanSECS  # noqa: F401
 from pysecs.secs import *  # noqa
 
