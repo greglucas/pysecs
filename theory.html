@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Theory &#8212; pysecs 0.1.0.dev1+unknown.gb5c5ac6c2 documentation</title>
+    <title>Theory &#8212; pysecs 0.1.0.dev1+unknown.g51212d8cb documentation</title>
   
   
   
@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
 
-    <script src="_static/documentation_options.js?v=1994b3b1"></script>
+    <script src="_static/documentation_options.js?v=6a3e9991"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/sg-tags.js?v=d80f6fa4"></script>
@@ -55,7 +55,7 @@
     <link rel="prev" title="Installation" href="installation.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.1.0.dev1+unknown.gb5c5ac6c2" />
+  <meta name="docsearch:version" content="0.1.0.dev1+unknown.g51212d8cb" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -127,8 +127,8 @@
       
     
     
-    <img src="_static/pysecs.png" class="logo__image only-light" alt="pysecs 0.1.0.dev1+unknown.gb5c5ac6c2 documentation - Home"/>
-    <img src="_static/pysecs.png" class="logo__image only-dark pst-js-only" alt="pysecs 0.1.0.dev1+unknown.gb5c5ac6c2 documentation - Home"/>
+    <img src="_static/pysecs.png" class="logo__image only-light" alt="pysecs 0.1.0.dev1+unknown.g51212d8cb documentation - Home"/>
+    <img src="_static/pysecs.png" class="logo__image only-dark pst-js-only" alt="pysecs 0.1.0.dev1+unknown.g51212d8cb documentation - Home"/>
   
   
 </a></div>
@@ -427,7 +427,7 @@ field that is stated but not written out in the original papers.</p>
 <section id="elementary-current-systems">
 <h2>Elementary current systems<a class="headerlink" href="#elementary-current-systems" title="Link to this heading">#</a></h2>
 <p>Spherical elementary current systems (SECS) were introduced by
-Amm (1997) <a class="footnote-reference brackets" href="#id6" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> as a pair of basis functions for two-dimensional vector
+Amm (1997) <a class="footnote-reference brackets" href="#id7" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> as a pair of basis functions for two-dimensional vector
 fields on a sphere. In a spherical coordinate system
 <span class="math notranslate nohighlight">\((r, \theta', \phi')\)</span> whose pole <span class="math notranslate nohighlight">\(\theta' = 0\)</span> is at the
 SEC location (“pole”) on a shell of radius <span class="math notranslate nohighlight">\(R\)</span>, the
@@ -438,7 +438,7 @@ divergence-free (df) and curl-free (cf) sheet current densities are</p>
 \qquad
 \vec{J}_{cf}(\theta') = \frac{I_0}{4 \pi R} \cot(\theta'/2)\,
 \hat{e}_{\theta'},\]</div>
-<p>(Amm &amp; Viljanen 1999 <a class="footnote-reference brackets" href="#id7" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>, Eqs. 6 and 7). The scaling factors
+<p>(Amm &amp; Viljanen 1999 <a class="footnote-reference brackets" href="#id8" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>, Eqs. 6 and 7). The scaling factors
 <span class="math notranslate nohighlight">\(I_0\)</span> (in Amperes) are the free parameters fit to observations.</p>
 <p>The curl-free system is closed by radial field-aligned currents (FACs):
 a line current <span class="math notranslate nohighlight">\(I_0\)</span> flowing <em>into</em> the ionosphere at the pole and
@@ -470,7 +470,7 @@ Appendix (Eqs. A.7 and A.8). These are implemented in
 cf system (with its FACs) produces <strong>no magnetic field at or below the
 current shell</strong> – the spherical generalization of Fukushima’s theorem –
 and a purely toroidal field above it. The explicit field was later
-published as Eq. 2.15 of Vanhamäki &amp; Juusola (2020) <a class="footnote-reference brackets" href="#id8" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a> and is
+published as Eq. 2.15 of Vanhamäki &amp; Juusola (2020) <a class="footnote-reference brackets" href="#id9" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a> and is
 implemented in <a class="reference internal" href="reference/generated/pysecs.T_cf.html#pysecs.T_cf" title="pysecs.T_cf"><code class="xref py py-func docutils literal notranslate"><span class="pre">pysecs.T_cf()</span></code></a>:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\vec{B}_{cf}(r, \theta') =
@@ -517,7 +517,7 @@ SECs cannot be constrained by the supplied observation geometry.</p>
 <p>The zero-below-shell result assumes radial FACs, which is a good
 approximation at high magnetic latitudes but degrades equatorward
 of roughly 60 degrees magnetic latitude where the field lines are
-inclined (Tamao 1986; see the discussion in <a class="footnote-reference brackets" href="#id8" id="id5" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>).</p>
+inclined (Tamao 1986; see the discussion in <a class="footnote-reference brackets" href="#id9" id="id5" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>).</p>
 </div>
 </section>
 <section id="coordinate-conventions">
@@ -548,29 +548,54 @@ to weights so that observations inconsistent with any smooth current
 system (single-station spikes, baseline jumps) are automatically
 downweighted.</p>
 </section>
+<section id="temporal-estimation">
+<h2>Temporal estimation<a class="headerlink" href="#temporal-estimation" title="Link to this heading">#</a></h2>
+<p><a class="reference internal" href="reference/generated/pysecs.KalmanSECS.html#pysecs.KalmanSECS" title="pysecs.KalmanSECS"><code class="xref py py-class docutils literal notranslate"><span class="pre">pysecs.KalmanSECS</span></code></a> couples the time steps with a
+linear-Gaussian state-space model on the amplitudes,</p>
+<div class="math notranslate nohighlight">
+\[m_t = \phi_t\, m_{t-1} + w_t, \qquad
+\phi_t = e^{-\Delta t / \tau}, \qquad
+w_t \sim N\!\left(0,\ (1 - \phi_t^2)\, \sigma_p^2 I\right),\]</div>
+<p>an exactly discretized Ornstein-Uhlenbeck process with correlation time
+<span class="math notranslate nohighlight">\(\tau\)</span> and stationary standard deviation <span class="math notranslate nohighlight">\(\sigma_p\)</span>
+(<code class="docutils literal notranslate"><span class="pre">prior_std</span></code>), observed through the SECS transfer matrix. A Kalman
+filter (optionally followed by a Rauch-Tung-Striebel smoother) then
+estimates the amplitudes and their covariance at every step. Innovation
+gating (<code class="docutils literal notranslate"><span class="pre">gate_sigma</span></code>) inflates the errors of observations that are
+inconsistent with the forecast, rejecting impulsive disturbances while
+following consistent large-scale changes. See Laundal et al. (2025)
+<a class="footnote-reference brackets" href="#id10" id="id6" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a> for a review of temporal regularization in ionospheric data
+assimilation.</p>
+</section>
 <section id="references">
 <h2>References<a class="headerlink" href="#references" title="Link to this heading">#</a></h2>
 <aside class="footnote-list brackets">
-<aside class="footnote brackets" id="id6" role="doc-footnote">
+<aside class="footnote brackets" id="id7" role="doc-footnote">
 <span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">1</a><span class="fn-bracket">]</span></span>
 <p>Amm, O. “Ionospheric Elementary Current Systems in Spherical
 Coordinates and Their Application.” J. Geomag. Geoelectr. 49
 (1997): 947-955. doi:10.5636/jgg.49.947</p>
 </aside>
-<aside class="footnote brackets" id="id7" role="doc-footnote">
+<aside class="footnote brackets" id="id8" role="doc-footnote">
 <span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">2</a><span class="fn-bracket">]</span></span>
 <p>Amm, O., and A. Viljanen. “Ionospheric disturbance magnetic
 field continuation from the ground to the ionosphere using
 spherical elementary current systems.” Earth, Planets and Space
 51 (1999): 431-440. doi:10.1186/BF03352247</p>
 </aside>
-<aside class="footnote brackets" id="id8" role="doc-footnote">
+<aside class="footnote brackets" id="id9" role="doc-footnote">
 <span class="label"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></span>
 <span class="backrefs">(<a role="doc-backlink" href="#id4">1</a>,<a role="doc-backlink" href="#id5">2</a>)</span>
 <p>Vanhamäki, H., and L. Juusola. “Introduction to Spherical
 Elementary Current Systems.” Ionospheric Multi-Spacecraft Analysis
 Tools, ISSI Scientific Report Series 17 (2020): 5-33.
 doi:10.1007/978-3-030-26732-2_2</p>
+</aside>
+<aside class="footnote brackets" id="id10" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">4</a><span class="fn-bracket">]</span></span>
+<p>Laundal, K. M., et al. “Next-Generation Data Assimilation
+Methods for Polar Ionospheric Electrodynamics.” Surveys in
+Geophysics (2025). doi:10.1007/s10712-025-09918-3</p>
 </aside>
 </aside>
 </section>
@@ -628,6 +653,7 @@ doi:10.1007/978-3-030-26732-2_2</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#magnetic-field-of-the-curl-free-system">Magnetic field of the curl-free system</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#coordinate-conventions">Coordinate conventions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fitting-and-uncertainty">Fitting and uncertainty</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#temporal-estimation">Temporal estimation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
 </ul>
   </nav></div>

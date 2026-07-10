@@ -1,0 +1,6 @@
+﻿pysecs.KalmanSECS.predict
+=========================
+
+.. currentmodule:: pysecs
+
+.. automethod:: KalmanSECS.predict

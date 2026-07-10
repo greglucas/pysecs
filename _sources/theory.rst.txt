@@ -150,6 +150,29 @@ to weights so that observations inconsistent with any smooth current
 system (single-station spikes, baseline jumps) are automatically
 downweighted.
 
+Temporal estimation
+-------------------
+
+:class:`pysecs.KalmanSECS` couples the time steps with a
+linear-Gaussian state-space model on the amplitudes,
+
+.. math::
+
+    m_t = \phi_t\, m_{t-1} + w_t, \qquad
+    \phi_t = e^{-\Delta t / \tau}, \qquad
+    w_t \sim N\!\left(0,\ (1 - \phi_t^2)\, \sigma_p^2 I\right),
+
+an exactly discretized Ornstein-Uhlenbeck process with correlation time
+:math:`\tau` and stationary standard deviation :math:`\sigma_p`
+(``prior_std``), observed through the SECS transfer matrix. A Kalman
+filter (optionally followed by a Rauch-Tung-Striebel smoother) then
+estimates the amplitudes and their covariance at every step. Innovation
+gating (``gate_sigma``) inflates the errors of observations that are
+inconsistent with the forecast, rejecting impulsive disturbances while
+following consistent large-scale changes. See Laundal et al. (2025)
+[4]_ for a review of temporal regularization in ionospheric data
+assimilation.
+
 References
 ----------
 
@@ -164,3 +187,6 @@ References
     Elementary Current Systems." Ionospheric Multi-Spacecraft Analysis
     Tools, ISSI Scientific Report Series 17 (2020): 5-33.
     doi:10.1007/978-3-030-26732-2_2
+.. [4] Laundal, K. M., et al. "Next-Generation Data Assimilation
+    Methods for Polar Ionospheric Electrodynamics." Surveys in
+    Geophysics (2025). doi:10.1007/s10712-025-09918-3

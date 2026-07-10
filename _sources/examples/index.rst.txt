@@ -89,6 +89,23 @@ This is a collection of examples to demonstrate how to use pysecs.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="A large disturbance at a single station -- a spike, a baseline jump, local interference -- is inconsistent with any smooth ionospheric current system, but an ordinary least-squares fit will spread it across the entire interpolated map. This example compares three defenses:">
+
+.. only:: html
+
+  .. image:: /examples/images/thumb/sphx_glr_plot_robust_kalman_thumb.png
+    :alt:
+
+  :doc:`/examples/plot_robust_kalman`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Robust fitting and temporal smoothing</div>
+    </div>
+
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates the resulting current surfaces from the curl-free and divergence-free SEC poles.">
 
 .. only:: html
@@ -135,6 +152,7 @@ This is a collection of examples to demonstrate how to use pysecs.
    /examples/plot_B_divergence_free
    /examples/plot_epsilon_selection
    /examples/plot_internal_external
+   /examples/plot_robust_kalman
    /examples/plot_J_surface
    /examples/plot_animation
 

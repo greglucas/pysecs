@@ -1,0 +1,26 @@
+﻿pysecs.KalmanSECS
+=================
+
+.. currentmodule:: pysecs
+
+.. autoclass:: KalmanSECS
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~KalmanSECS.__init__
+      ~KalmanSECS.fit
+      ~KalmanSECS.predict
+      ~KalmanSECS.predict_B
+      ~KalmanSECS.predict_J
+   
+   
+
+   
+   
+   

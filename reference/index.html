@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>API reference &#8212; pysecs 0.1.0.dev1+unknown.gb5c5ac6c2 documentation</title>
+    <title>API reference &#8212; pysecs 0.1.0.dev1+unknown.g51212d8cb documentation</title>
   
   
   
@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
 
-    <script src="../_static/documentation_options.js?v=1994b3b1"></script>
+    <script src="../_static/documentation_options.js?v=6a3e9991"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/sg-tags.js?v=d80f6fa4"></script>
@@ -54,7 +54,7 @@
     <link rel="prev" title="Fitting B time series (animation)" href="../examples/plot_animation.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.1.0.dev1+unknown.gb5c5ac6c2" />
+  <meta name="docsearch:version" content="0.1.0.dev1+unknown.g51212d8cb" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -126,8 +126,8 @@
       
     
     
-    <img src="../_static/pysecs.png" class="logo__image only-light" alt="pysecs 0.1.0.dev1+unknown.gb5c5ac6c2 documentation - Home"/>
-    <img src="../_static/pysecs.png" class="logo__image only-dark pst-js-only" alt="pysecs 0.1.0.dev1+unknown.gb5c5ac6c2 documentation - Home"/>
+    <img src="../_static/pysecs.png" class="logo__image only-light" alt="pysecs 0.1.0.dev1+unknown.g51212d8cb documentation - Home"/>
+    <img src="../_static/pysecs.png" class="logo__image only-dark pst-js-only" alt="pysecs 0.1.0.dev1+unknown.g51212d8cb documentation - Home"/>
   
   
 </a></div>
@@ -376,6 +376,13 @@
 <li class="toctree-l1"><a class="reference internal" href="generated/pysecs.SECS.nsec.html">pysecs.SECS.nsec</a></li>
 </ul>
 <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="generated/pysecs.KalmanSECS.html">pysecs.KalmanSECS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/pysecs.KalmanSECS.fit.html">pysecs.KalmanSECS.fit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/pysecs.KalmanSECS.predict.html">pysecs.KalmanSECS.predict</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/pysecs.KalmanSECS.predict_B.html">pysecs.KalmanSECS.predict_B</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generated/pysecs.KalmanSECS.predict_J.html">pysecs.KalmanSECS.predict_J</a></li>
+</ul>
+<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="generated/pysecs.T_df.html">pysecs.T_df</a></li>
 <li class="toctree-l1"><a class="reference internal" href="generated/pysecs.T_cf.html">pysecs.T_cf</a></li>
 <li class="toctree-l1"><a class="reference internal" href="generated/pysecs.J_df.html">pysecs.J_df</a></li>
@@ -482,6 +489,30 @@ to fit to data and then predict at any other location.</p>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="generated/pysecs.SECS.nsec.html#pysecs.SECS.nsec" title="pysecs.SECS.nsec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SECS.nsec</span></code></a></p></td>
 <td><p>The number of elementary currents in this system.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Temporal estimation</p>
+<p>The KalmanSECS class couples time steps together with a state-space
+model on the SEC amplitudes, estimated with a Kalman filter and
+Rauch-Tung-Striebel smoother.</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/pysecs.KalmanSECS.html#pysecs.KalmanSECS" title="pysecs.KalmanSECS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">KalmanSECS</span></code></a>(secs, tau[, prior_std, ...])</p></td>
+<td><p>Kalman filter / smoother for time series of SECS amplitudes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/pysecs.KalmanSECS.fit.html#pysecs.KalmanSECS.fit" title="pysecs.KalmanSECS.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">KalmanSECS.fit</span></code></a>(obs_loc, obs_B, times[, obs_std])</p></td>
+<td><p>Run the filter (and smoother) over a time series of observations.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/pysecs.KalmanSECS.predict.html#pysecs.KalmanSECS.predict" title="pysecs.KalmanSECS.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">KalmanSECS.predict</span></code></a>(pred_loc[, J, return_var])</p></td>
+<td><p>Predict magnetic fields or currents from the estimated amplitudes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/pysecs.KalmanSECS.predict_B.html#pysecs.KalmanSECS.predict_B" title="pysecs.KalmanSECS.predict_B"><code class="xref py py-obj docutils literal notranslate"><span class="pre">KalmanSECS.predict_B</span></code></a>(pred_loc[, return_var])</p></td>
+<td><p>Predict magnetic fields; see <code class="xref py py-meth docutils literal notranslate"><span class="pre">predict()</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/pysecs.KalmanSECS.predict_J.html#pysecs.KalmanSECS.predict_J" title="pysecs.KalmanSECS.predict_J"><code class="xref py py-obj docutils literal notranslate"><span class="pre">KalmanSECS.predict_J</span></code></a>(pred_loc[, return_var])</p></td>
+<td><p>Predict currents; see <code class="xref py py-meth docutils literal notranslate"><span class="pre">predict()</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
