@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>pysecs.KalmanSECS.fit &#8212; pysecs 0.1.0.dev1+unknown.gb1c0578fd documentation</title>
+    <title>pysecs.KalmanSECS.fit &#8212; pysecs 0.1.0.dev1+unknown.g9f78580a0 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=110654dc"></script>
+    <script src="../../_static/documentation_options.js?v=2ec2e00f"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
@@ -49,12 +49,12 @@
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="pysecs.KalmanSECS.predict" href="pysecs.KalmanSECS.predict.html" />
+    <link rel="next" title="pysecs.KalmanSECS.fit_J" href="pysecs.KalmanSECS.fit_J.html" />
     <link rel="prev" title="pysecs.KalmanSECS" href="pysecs.KalmanSECS.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.1.0.dev1+unknown.gb1c0578fd" />
+  <meta name="docsearch:version" content="0.1.0.dev1+unknown.g9f78580a0" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -126,8 +126,8 @@
       
     
     
-    <img src="../../_static/pysecs.png" class="logo__image only-light" alt="pysecs 0.1.0.dev1+unknown.gb1c0578fd documentation - Home"/>
-    <img src="../../_static/pysecs.png" class="logo__image only-dark pst-js-only" alt="pysecs 0.1.0.dev1+unknown.gb1c0578fd documentation - Home"/>
+    <img src="../../_static/pysecs.png" class="logo__image only-light" alt="pysecs 0.1.0.dev1+unknown.g9f78580a0 documentation - Home"/>
+    <img src="../../_static/pysecs.png" class="logo__image only-dark pst-js-only" alt="pysecs 0.1.0.dev1+unknown.g9f78580a0 documentation - Home"/>
   
   
 </a></div>
@@ -381,6 +381,7 @@
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="pysecs.KalmanSECS.html">pysecs.KalmanSECS</a></li>
 <li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">pysecs.KalmanSECS.fit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pysecs.KalmanSECS.fit_J.html">pysecs.KalmanSECS.fit_J</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pysecs.KalmanSECS.predict.html">pysecs.KalmanSECS.predict</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pysecs.KalmanSECS.predict_B.html">pysecs.KalmanSECS.predict_B</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pysecs.KalmanSECS.predict_J.html">pysecs.KalmanSECS.predict_J</a></li>
@@ -461,7 +462,7 @@
 <h1>pysecs.KalmanSECS.fit<a class="headerlink" href="#pysecs-kalmansecs-fit" title="Link to this heading">#</a></h1>
 <dl class="py method">
 <dt class="sig sig-object py" id="pysecs.KalmanSECS.fit">
-<span class="sig-prename descclassname"><span class="pre">KalmanSECS.</span></span><span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_loc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_B</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_std</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pysecs.KalmanSECS.html#pysecs.KalmanSECS" title="pysecs.kalman.KalmanSECS"><span class="pre">KalmanSECS</span></a></span></span><a class="headerlink" href="#pysecs.KalmanSECS.fit" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">KalmanSECS.</span></span><span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_loc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_B</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_std</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">J_loc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_J</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">J_std</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pysecs.KalmanSECS.html#pysecs.KalmanSECS" title="pysecs.kalman.KalmanSECS"><span class="pre">KalmanSECS</span></a></span></span><a class="headerlink" href="#pysecs.KalmanSECS.fit" title="Link to this definition">#</a></dt>
 <dd><p>Run the filter (and smoother) over a time series of observations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -475,7 +476,22 @@ seconds).</p></li>
 <li><p><strong>obs_std</strong> (<em>ndarray</em><em> (</em><em>ntimes</em><em>, </em><em>nobs</em><em>, </em><em>3</em><em>)</em><em>, </em><em>optional</em>) – 1-sigma standard errors of the observations. Infinite values
 eliminate an observation at that time step, e.g. for station
 dropouts. Default: ones (equal weights).</p></li>
+<li><p><strong>J_loc</strong> (<em>ndarray</em><em>, </em><em>optional</em>) – Current density observations to fit jointly with the magnetic
+field, as in <a class="reference internal" href="pysecs.SECS.fit.html#pysecs.SECS.fit" title="pysecs.SECS.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">SECS.fit()</span></code></a>. Non-finite values of <code class="docutils literal notranslate"><span class="pre">obs_J</span></code>
+are treated as missing data.</p></li>
+<li><p><strong>obs_J</strong> (<em>ndarray</em><em>, </em><em>optional</em>) – Current density observations to fit jointly with the magnetic
+field, as in <a class="reference internal" href="pysecs.SECS.fit.html#pysecs.SECS.fit" title="pysecs.SECS.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">SECS.fit()</span></code></a>. Non-finite values of <code class="docutils literal notranslate"><span class="pre">obs_J</span></code>
+are treated as missing data.</p></li>
+<li><p><strong>J_std</strong> (<em>ndarray</em><em>, </em><em>optional</em>) – Current density observations to fit jointly with the magnetic
+field, as in <a class="reference internal" href="pysecs.SECS.fit.html#pysecs.SECS.fit" title="pysecs.SECS.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">SECS.fit()</span></code></a>. Non-finite values of <code class="docutils literal notranslate"><span class="pre">obs_J</span></code>
+are treated as missing data.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>This estimator, with the amplitudes stored in <code class="docutils literal notranslate"><span class="pre">sec_amps</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pysecs.KalmanSECS.html#pysecs.KalmanSECS" title="pysecs.KalmanSECS">KalmanSECS</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -502,11 +518,11 @@ dropouts. Default: ones (equal weights).</p></li>
       </div>
     </a>
     <a class="right-next"
-       href="pysecs.KalmanSECS.predict.html"
+       href="pysecs.KalmanSECS.fit_J.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">pysecs.KalmanSECS.predict</p>
+        <p class="prev-next-title">pysecs.KalmanSECS.fit_J</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

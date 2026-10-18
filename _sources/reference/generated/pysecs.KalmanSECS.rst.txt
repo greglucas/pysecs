@@ -16,6 +16,7 @@
       ~KalmanSECS.__init__
       ~KalmanSECS.fac_density
       ~KalmanSECS.fit
+      ~KalmanSECS.fit_J
       ~KalmanSECS.predict
       ~KalmanSECS.predict_B
       ~KalmanSECS.predict_J

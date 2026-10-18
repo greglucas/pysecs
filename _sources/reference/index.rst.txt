@@ -51,6 +51,7 @@ Rauch-Tung-Striebel smoother.
 
     KalmanSECS
     KalmanSECS.fit
+    KalmanSECS.fit_J
     KalmanSECS.predict
     KalmanSECS.predict_B
     KalmanSECS.predict_J

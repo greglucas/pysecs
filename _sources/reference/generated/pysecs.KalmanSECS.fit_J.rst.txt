@@ -1,0 +1,6 @@
+﻿pysecs.KalmanSECS.fit\_J
+========================
+
+.. currentmodule:: pysecs
+
+.. automethod:: KalmanSECS.fit_J
