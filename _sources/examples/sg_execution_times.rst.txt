@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:17.988** total execution time for 9 files **from examples**:
+**00:09.474** total execution time for 9 files **from examples**:
 
 .. container::
 
@@ -33,29 +33,29 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_examples_plot_animation.py` (``plot_animation.py``)
-     - 00:15.088
+     - 00:07.950
      - 0.0
    * - :ref:`sphx_glr_examples_plot_epsilon_selection.py` (``plot_epsilon_selection.py``)
-     - 00:01.192
+     - 00:00.600
      - 0.0
    * - :ref:`sphx_glr_examples_plot_joint_fit.py` (``plot_joint_fit.py``)
-     - 00:00.523
+     - 00:00.273
      - 0.0
    * - :ref:`sphx_glr_examples_plot_auto_grid.py` (``plot_auto_grid.py``)
-     - 00:00.285
+     - 00:00.169
      - 0.0
    * - :ref:`sphx_glr_examples_plot_J_surface.py` (``plot_J_surface.py``)
-     - 00:00.280
+     - 00:00.159
      - 0.0
    * - :ref:`sphx_glr_examples_plot_robust_kalman.py` (``plot_robust_kalman.py``)
-     - 00:00.270
+     - 00:00.123
      - 0.0
    * - :ref:`sphx_glr_examples_plot_B_curl_free.py` (``plot_B_curl_free.py``)
-     - 00:00.136
+     - 00:00.083
      - 0.0
    * - :ref:`sphx_glr_examples_plot_internal_external.py` (``plot_internal_external.py``)
-     - 00:00.131
+     - 00:00.071
      - 0.0
    * - :ref:`sphx_glr_examples_plot_B_divergence_free.py` (``plot_B_divergence_free.py``)
-     - 00:00.083
+     - 00:00.046
      - 0.0

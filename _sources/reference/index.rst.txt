@@ -34,6 +34,7 @@ to fit to data and then predict at any other location.
     SECS.predict
     SECS.predict_B
     SECS.predict_J
+    SECS.fac_density
 
     SECS.has_df
     SECS.has_cf
@@ -53,6 +54,7 @@ Rauch-Tung-Striebel smoother.
     KalmanSECS.predict
     KalmanSECS.predict_B
     KalmanSECS.predict_J
+    KalmanSECS.fac_density
 
 .. rubric:: Grid generation
 

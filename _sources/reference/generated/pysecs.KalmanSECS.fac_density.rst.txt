@@ -1,0 +1,6 @@
+﻿pysecs.KalmanSECS.fac\_density
+==============================
+
+.. currentmodule:: pysecs
+
+.. automethod:: KalmanSECS.fac_density

@@ -1,0 +1,6 @@
+﻿pysecs.SECS.fac\_density
+========================
+
+.. currentmodule:: pysecs
+
+.. automethod:: SECS.fac_density
