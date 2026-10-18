@@ -160,7 +160,8 @@ Eqs. 6 and 7. Any horizontal current field on a sphere is the sum of a
 divergence-free and a curl-free part (a Helmholtz decomposition), and
 the df and cf SECs are bases for these two parts, so this fit
 decomposes the currents. Because the horizontal current is closed by
-the field-aligned currents, :math:`\nabla \cdot \vec{J}_{cf} = -j_r`,
+the field-aligned currents, :math:`\nabla \cdot \vec{J}_{cf} = -j_r`
+(:math:`j_r` positive outward),
 the cf amplitudes also give the FACs: each cf SEC carries a FAC of its
 amplitude into the shell at its pole, i.e. a FAC density of the
 amplitude divided by the area of its grid cell. Conversely, observed
@@ -185,8 +186,10 @@ Why would one fit currents?
 
 Current observations must be located on a SEC shell, because the SEC
 currents only flow on their shell. Only the horizontal components are
-fit; the radial component returned by :meth:`pysecs.SECS.predict_J` is
-the FAC implied by the cf amplitudes rather than a sheet current. The
+fit, as the radial component returned by
+:meth:`pysecs.SECS.predict_J` is not a sheet current. It only contains
+the uniform return FAC (positive down), plus a marker value at the pole,
+so FAC densities should be computed from the amplitudes as above. The
 current of a SEC is singular at its own pole, but averages to zero
 over any small cap around it, so an observation located exactly at a
 pole gets no contribution from that SEC. This allows currents to be fit

@@ -975,13 +975,21 @@ def test_fit_J_at_sec_poles():
     assert np.all(np.isfinite(secs.sec_amps))
     assert np.all(np.isfinite(secs.sec_amps_var))
 
+    # Round-off in the coordinates must not turn the pole into a huge value
+    nudged = secs.sec_df_loc + np.array([1e-13, 1e-13, 0.0])
+    exact_amps = secs.sec_amps
+    secs.fit_J(nudged, truth.predict_J(nudged))
+    assert_allclose(secs.sec_amps, exact_amps, rtol=1e-6)
+
 
 def test_fit_J_off_shell_warns():
     """Currents only flow on the SEC shells, so other radii warn."""
     truth, ground_locs, J_locs = _current_test_system()
     secs = pysecs.SECS(sec_df_loc=truth.sec_df_loc)
-    with pytest.warns(UserWarning, match="not located on a SEC shell"):
+    with pytest.warns(UserWarning, match="not located on a SEC shell") as record:
         secs.fit_J(ground_locs, truth.predict_J(J_locs))
+    # The warning points at the caller
+    assert record[0].filename == __file__
 
 
 def test_fit_J_bad_shapes():
@@ -1044,6 +1052,29 @@ def test_fit_joint_recovers_curl_free():
     pred, var = secs.predict_B(ground_locs, return_var=True)
     assert_allclose(pred, obs_B, atol=1e-6 * np.max(np.abs(obs_B)))
     assert np.all(var > 0)
+
+
+def test_fit_joint_robust_multi_time():
+    """Joint fits support multiple times, robust weights and 2D stds."""
+    truth, ground_locs, J_locs = _current_test_system()
+    obs_B = truth.predict_B(ground_locs)
+    obs_J = truth.predict_J(J_locs)
+    obs_J_spiked = obs_J.copy()
+    obs_J_spiked[0, :2] += 100 * np.max(np.abs(obs_J))
+
+    secs = pysecs.SECS(sec_df_loc=truth.sec_df_loc, sec_cf_loc=truth.sec_cf_loc)
+    secs.fit(
+        ground_locs,
+        np.stack([obs_B, obs_B]),
+        np.full_like(obs_B, 1e-9),
+        epsilon=1e-8,
+        robust="bisquare",
+        J_loc=J_locs,
+        obs_J=np.stack([obs_J, obs_J_spiked]),
+        # Horizontal standard errors only, shared by all time steps
+        J_std=np.full((len(J_locs), 2), 1e-3),
+    )
+    assert_allclose(secs.sec_amps, np.repeat(truth.sec_amps, 2, axis=0), rtol=1e-4)
 
 
 def test_fit_joint_bad_arguments():

@@ -58,16 +58,14 @@ class SECS:
         # Convert to array if not already and
         # add an empty dimension if only one SEC location is passed in
         self.sec_df_loc = np.atleast_2d(sec_df_loc)
-        if self.sec_df_loc.shape[-1] != 3:
-            raise ValueError("SEC DF locations must have 3 columns (lat, lon, r)")
+        _check_loc(self.sec_df_loc, "SEC DF")
 
         if sec_cf_loc is None:
             sec_cf_loc = np.empty((0, 3))
         # Convert to array if not already and
         # add an empty dimension if only one SEC location is passed in
         self.sec_cf_loc = np.atleast_2d(sec_cf_loc)
-        if self.sec_cf_loc.shape[-1] != 3:
-            raise ValueError("SEC CF locations must have 3 columns (lat, lon, r)")
+        _check_loc(self.sec_cf_loc, "SEC CF")
 
         # Storage of the scaling factors
         self.sec_amps = np.empty((0, self.nsec))
@@ -337,7 +335,7 @@ class SECS:
 
         if J_loc is None or obs_J is None:
             self._warn_unconstrained_cf(obs_loc)
-            B_flat, B_std_flat = _flatten_obs(obs_B, obs_std, ncomp=3)
+            B_flat, B_std_flat = _flatten_obs(obs_B, obs_std, ncomp=3, name="obs_B")
             return self._fit(
                 self._calc_T_obs(obs_loc),
                 B_flat,
@@ -357,8 +355,8 @@ class SECS:
             )
         _check_loc(J_loc, "Current observation")
         self._warn_off_shell(J_loc)
-        B_flat, B_std_flat = _flatten_obs(obs_B, obs_std, ncomp=3)
-        J_flat, J_std_flat = _flatten_obs(obs_J, J_std, ncomp=2)
+        B_flat, B_std_flat = _flatten_obs(obs_B, obs_std, ncomp=3, name="obs_B")
+        J_flat, J_std_flat = _flatten_obs(obs_J, J_std, ncomp=2, name="obs_J")
         if len(B_flat) != len(J_flat):
             raise ValueError("obs_B and obs_J must have the same number of time steps")
 
@@ -390,8 +388,8 @@ class SECS:
         This is the current density counterpart of :meth:`fit`. Fitting
         divergence-free and curl-free SECs to a horizontal current field
         decomposes it into its rotational and divergent parts (a Helmholtz
-        decomposition on the sphere), and the curl-free amplitudes give
-        the associated field-aligned currents via :meth:`predict_J`.
+        decomposition on the sphere). Each curl-free amplitude is the
+        field-aligned current flowing into the shell at that SEC pole.
         Typical inputs are currents derived from radar electric fields and
         conductances, or the output of a numerical model. To combine
         currents with magnetic field observations, use the joint fit in
@@ -407,8 +405,7 @@ class SECS:
         obs_J : ndarray (ntimes, nobs, 2 [Jx, Jy] or 3 [Jx, Jy, Jz])
             The observed horizontal sheet current densities (A/m). A third
             (radial) component, such as the output of :meth:`predict_J`,
-            is ignored: it is not a sheet current, but the field-aligned
-            current implied by the curl-free amplitudes.
+            is ignored since it is not a sheet current.
 
         obs_std : ndarray, same shape as ``obs_J``, optional
             Standard error (1-sigma) of the current components, see
@@ -426,13 +423,13 @@ class SECS:
         Notes
         -----
         The current of a SEC is singular at its own pole, but averages to
-        zero over any small cap around it. Observations located exactly at
-        a pole therefore receive no contribution from that SEC, so currents
-        can be fit at the SEC grid points themselves.
+        zero over any small cap around it. Observations at a pole (within
+        1e-9 radians) therefore receive no contribution from that SEC, so
+        currents can be fit at the SEC grid points themselves.
         """
         _check_loc(obs_loc, "Observation")
         self._warn_off_shell(obs_loc)
-        J_flat, J_std_flat = _flatten_obs(obs_J, obs_std, ncomp=2)
+        J_flat, J_std_flat = _flatten_obs(obs_J, obs_std, ncomp=2, name="obs_J")
         return self._fit(
             self._calc_T_obs(obs_loc, J=True),
             J_flat,
@@ -490,10 +487,12 @@ class SECS:
             return self._T_obs_flat
 
         if not np.array_equal(obs_loc, self._obs_loc_J):
-            T = self._calc_J(obs_loc)[:, :2, :]
             # A SEC's current is singular at its own pole, but its average
-            # over any small cap around the pole is zero
-            T[~np.isfinite(T)] = 0.0
+            # over any small cap around the pole is zero. A tolerance keeps
+            # round-off in the coordinates from producing huge values.
+            sec_loc = np.vstack([self.sec_df_loc, self.sec_cf_loc])
+            at_pole = calc_angular_distance(obs_loc[:, :2], sec_loc[:, :2]) < 1e-9
+            T = np.where(at_pole[:, np.newaxis, :], 0.0, self._calc_J(obs_loc)[:, :2])
             self._T_obs_J_flat = T.reshape(-1, self.nsec)
             self._obs_loc_J = obs_loc.copy()
         return self._T_obs_J_flat
@@ -676,8 +675,7 @@ class SECS:
             fit to this system. If return_var is True, a tuple of
             (predictions, variances) with identical shapes is returned.
         """
-        if pred_loc.shape[-1] != 3:
-            raise ValueError("Prediction locations must have 3 columns (lat, lon, r)")
+        _check_loc(pred_loc, "Prediction")
 
         if len(self.sec_amps) == 0:
             raise ValueError(
@@ -827,7 +825,7 @@ def _check_loc(loc: np.ndarray, name: str) -> None:
 
 
 def _flatten_obs(
-    values: np.ndarray, std: np.ndarray | None, ncomp: int
+    values: np.ndarray, std: np.ndarray | None, ncomp: int, name: str
 ) -> tuple[np.ndarray, np.ndarray]:
     """Flatten observations and their standard errors to (ntimes, nvalues).
 
@@ -839,20 +837,18 @@ def _flatten_obs(
         # Just a single snapshot given, so expand the dimensionality
         values = values[np.newaxis, ...]
     if values.shape[-1] not in (ncomp, 3):
-        allowed = " or ".join(str(n) for n in sorted({ncomp, 3}))
         raise ValueError(
-            f"Observations must have {allowed} vector components, "
-            f"got {values.shape[-1]}"
+            f"{name} must have {ncomp} or 3 vector components, got {values.shape[-1]}"
         )
+    values = values[..., :ncomp]
 
     # Assume unit standard error of all measurements
-    std = np.ones_like(values) if std is None else np.broadcast_to(std, values.shape)
+    if std is None:
+        std = np.ones_like(values)
+    std = np.broadcast_to(np.asarray(std)[..., :ncomp], values.shape)
 
     ntimes = len(values)
-    return (
-        values[..., :ncomp].reshape(ntimes, -1),
-        std[..., :ncomp].reshape(ntimes, -1),
-    )
+    return values.reshape(ntimes, -1), std.reshape(ntimes, -1)
 
 
 def T_df(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:
