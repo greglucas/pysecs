@@ -9,6 +9,9 @@
   their field-aligned currents. `fit()` can also fit magnetic field and
   current observations jointly with the new keyword-only `J_loc`, `obs_J` and
   `J_std` arguments.
+- FAC densities: `fac_density()` on `SECS` and `KalmanSECS` computes the
+  field-aligned current density (and its variance) at each curl-free SEC
+  from the fitted amplitudes and grid cell areas.
 
 ### Bug fixes
 

@@ -163,10 +163,12 @@ decomposes the currents. Because the horizontal current is closed by
 the field-aligned currents, :math:`\nabla \cdot \vec{J}_{cf} = -j_r`
 (:math:`j_r` positive outward),
 the cf amplitudes also give the FACs: each cf SEC carries a FAC of its
-amplitude into the shell at its pole, i.e. a FAC density of the
-amplitude divided by the area of its grid cell. Conversely, observed
-FAC densities map directly onto cf amplitudes (density times cell area)
-without a separate fit.
+amplitude into the shell at its pole. Spreading it over the grid cell
+around the pole, and subtracting the uniform return currents of all cf
+SECs on the shell, gives the FAC density computed by
+:meth:`pysecs.SECS.fac_density`. Conversely, observed FAC densities map
+directly onto cf amplitudes (density times cell area) without a
+separate fit.
 
 Why would one fit currents?
 
@@ -190,7 +192,8 @@ currents only flow on their shell. Only the horizontal components are
 fit, as the radial component returned by
 :meth:`pysecs.SECS.predict_J` is not a sheet current. It only contains
 the uniform return FAC (positive down), plus a marker value at the pole,
-so FAC densities should be computed from the amplitudes as above. The
+so FAC densities should be computed with
+:meth:`pysecs.SECS.fac_density` instead. The
 current of a SEC is singular at its own pole, but averages to zero
 over any small cap around it, so an observation located exactly at a
 pole gets no contribution from that SEC. This allows currents to be fit

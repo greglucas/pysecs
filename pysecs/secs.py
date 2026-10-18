@@ -678,12 +678,7 @@ class SECS:
             (predictions, variances) with identical shapes is returned.
         """
         _check_loc(pred_loc, "Prediction")
-
-        if len(self.sec_amps) == 0:
-            raise ValueError(
-                "There are no currents associated with the SECs, you need"
-                "to call .fit() first to fit to some observations."
-            )
+        self._check_fitted()
 
         # T_pred shape: (npred, 3, nsec)
         # sec_amps shape: (ntimes, nsec)
@@ -704,26 +699,35 @@ class SECS:
         if not return_var:
             return pred
 
+        var = self._prediction_var(T_pred.reshape(-1, self.nsec))
+        return pred, np.squeeze(var.reshape(-1, *T_pred.shape[:2]))
+
+    def _check_fitted(self) -> None:
+        """Raise if no amplitudes have been fit yet."""
+        if len(self.sec_amps) == 0:
+            raise ValueError(
+                "There are no currents associated with the SECs, you need"
+                "to call .fit() first to fit to some observations."
+            )
+
+    def _prediction_var(self, T_flat: np.ndarray) -> np.ndarray:
+        """Variances (ntimes, nrows) of the linear predictions T_flat @ amps."""
         if self._VWU_patterns is None or self._pattern_index is None:
             raise ValueError(
                 "Prediction variances require amplitudes fit with fit(). "
                 "Call fit() before predicting with return_var=True."
             )
 
-        # pred = T_pred @ amps and amps = VWU @ (B / std) with the scaled
+        # pred = T @ amps and amps = VWU @ (B / std) with the scaled
         # observations having unit variance, so
-        # Cov(pred) = (T_pred @ VWU) @ (T_pred @ VWU).T and the variances
-        # are the row sums of squares of M = T_pred @ VWU. The variance
-        # only depends on the uncertainty pattern, so it is computed once
-        # per pattern from the operators saved by fit().
-        npred = len(pred_loc)
-        T_pred_flat = T_pred.reshape(-1, self.nsec)
-        var = np.empty((len(self.sec_amps), npred, 3))
+        # Cov(pred) = (T @ VWU) @ (T @ VWU).T and the variances are the
+        # row sums of squares of M = T @ VWU. The variance only depends on
+        # the uncertainty pattern, so it is computed once per pattern from
+        # the operators saved by fit().
+        var = np.empty((len(self.sec_amps), len(T_flat)))
         for i, VWU in enumerate(self._VWU_patterns):
-            M = T_pred_flat @ VWU
-            var[self._pattern_index == i] = np.sum(M**2, axis=1).reshape(npred, 3)
-
-        return pred, np.squeeze(var)
+            var[self._pattern_index == i] = np.sum((T_flat @ VWU) ** 2, axis=1)
+        return var
 
     def predict_B(
         self, pred_loc: np.ndarray, return_var: bool = False
@@ -761,6 +765,11 @@ class SECS:
         predict the magnetic fields or currents at any other location. This
         function uses those fit amplitudes to predict at the requested locations.
 
+        The radial (third) component only contains the uniform return
+        field-aligned current of the curl-free SECs, plus a marker value at
+        their poles. Use :meth:`fac_density` for field-aligned current
+        densities.
+
         Parameters
         ----------
         pred_loc: ndarray (npred, 3 [lat, lon, r])
@@ -778,6 +787,63 @@ class SECS:
             (predictions, variances) with identical shapes is returned.
         """
         return self.predict(pred_loc, J=True, return_var=return_var)
+
+    def fac_density(
+        self, cell_area: float | np.ndarray, return_var: bool = False
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
+        """Calculate the field-aligned current (FAC) density.
+
+        Each curl-free SEC carries its amplitude as a line current into
+        the shell at its pole, returned by a uniform outward current over
+        the whole shell. Spreading the line current over the grid cell
+        around its pole gives the FAC density at each curl-free SEC.
+        The radial component of :meth:`predict_J` only contains the
+        uniform return current, so use this method for FAC densities.
+
+        Parameters
+        ----------
+        cell_area : float or ndarray (ncf,)
+            Area (m^2) of the grid cell around each curl-free SEC pole. For
+            a regular latitude/longitude grid with spacings ``dlat`` and
+            ``dlon`` (radians) this is ``r**2 * dlat * dlon * cos(lat)``.
+
+        return_var : bool
+            Whether to also return the variance of the FAC densities.
+            Default: False
+
+        Returns
+        -------
+        ndarray (ntimes, ncf)
+            Downward (into the shell) FAC density in A/m^2 at each
+            curl-free SEC location ``sec_cf_loc``. If return_var is True,
+            a tuple of (densities, variances) with identical shapes is
+            returned.
+        """
+        D = self._fac_operator(cell_area)
+        self._check_fitted()
+        fac = np.squeeze(self.sec_amps @ D.T)
+        if not return_var:
+            return fac
+        return fac, np.squeeze(self._prediction_var(D))
+
+    def _fac_operator(self, cell_area: float | np.ndarray) -> np.ndarray:
+        """Matrix (ncf, nsec) mapping amplitudes to downward FAC densities."""
+        if not self.has_cf:
+            raise ValueError("FAC densities require curl-free SECs")
+
+        ncf = len(self.sec_cf_loc)
+        if np.size(cell_area) not in (1, ncf):
+            raise ValueError(
+                "cell_area must be a scalar or have one entry per curl-free SEC"
+            )
+        area = np.broadcast_to(np.asarray(cell_area, dtype=float), (ncf,))
+        r = self.sec_cf_loc[:, 2]
+        # Line current into the shell spread over the cell, minus the
+        # uniform return current of every curl-free SEC on the same shell
+        D_cf = np.diag(1 / area) - (r[:, np.newaxis] == r) / (4 * np.pi * r**2)
+        D = np.zeros((ncf, self.nsec))
+        D[:, len(self.sec_df_loc) :] = D_cf
+        return D
 
     def _calc_T(self, obs_loc: np.ndarray) -> np.ndarray:
         """Calculate the T transfer matrix.
