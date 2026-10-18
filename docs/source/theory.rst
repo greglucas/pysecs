@@ -214,7 +214,8 @@ linear-Gaussian state-space model on the amplitudes,
 
 an exactly discretized Ornstein-Uhlenbeck process with correlation time
 :math:`\tau` and stationary standard deviation :math:`\sigma_p`
-(``prior_std``), observed through the SECS transfer matrix. A Kalman
+(``prior_std``), observed through the SECS transfer matrices of the
+magnetic field, the currents (``fit_J``), or both (joint ``fit``). A Kalman
 filter (optionally followed by a Rauch-Tung-Striebel smoother) then
 estimates the amplitudes and their covariance at every step. Innovation
 gating (``gate_sigma``) inflates the errors of observations that are

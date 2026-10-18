@@ -227,7 +227,10 @@ def test_fac_density(system):
     )
     with pytest.raises(ValueError, match="Call fit"):
         kf.fac_density(1e10)
-    kf.fit(system["obs_locs"], system["obs_B"], system["times"], system["obs_std"])
+    # Ground observations leave the cf amplitudes at their prior
+    with pytest.warns(UserWarning, match="Fukushima") as record:
+        kf.fit(system["obs_locs"], system["obs_B"], system["times"], system["obs_std"])
+    assert record[0].filename == __file__
 
     area = np.full(len(sec_locs), 1e10)
     fac, var = kf.fac_density(area, return_var=True)
@@ -235,3 +238,100 @@ def test_fac_density(system):
     assert_allclose(fac, kf.sec_amps @ D.T)
     expected_var = np.einsum("ij,tjk,ik->ti", D, kf.sec_amps_cov, D)
     assert_allclose(var, expected_var)
+
+
+def _current_system(system):
+    """df + cf truth on the system grid with ground and shell observations."""
+    rng = np.random.default_rng(5)
+    sec_locs = system["sec_locs"]
+    truth = pysecs.SECS(sec_df_loc=sec_locs, sec_cf_loc=sec_locs)
+    truth.sec_amps = rng.normal(0, 1e4, (1, truth.nsec))
+    J_locs = system["obs_locs"].copy()
+    J_locs[:, 2] = sec_locs[0, 2]
+    # Denser current observations so that they determine all amplitudes
+    shift = np.array([0.5, 0.5, 0.0])
+    J_locs = np.vstack([J_locs, J_locs + shift, J_locs - shift])
+    return truth, J_locs
+
+
+def test_fit_J_matches_snapshot_without_noise(system):
+    """With uninformative dynamics, fit_J recovers the noise-free truth."""
+    truth, J_locs = _current_system(system)
+    obs_J = np.repeat(truth.predict_J(J_locs)[np.newaxis, :, :2], 3, axis=0)
+    J_std = np.full_like(obs_J, 1e-6)
+
+    kf = pysecs.KalmanSECS(
+        pysecs.SECS(sec_df_loc=truth.sec_df_loc, sec_cf_loc=truth.sec_cf_loc),
+        tau=60.0,
+        prior_std=1e6,
+    )
+    assert kf.fit_J(J_locs, obs_J, np.arange(3) * 60.0, J_std) is kf
+    assert_allclose(kf.sec_amps, np.repeat(truth.sec_amps, 3, axis=0), rtol=1e-3)
+
+
+def test_joint_fit_constrains_curl_free(system):
+    """Adding currents to ground data constrains the cf amplitudes."""
+    truth, J_locs = _current_system(system)
+    ntimes = 5
+    times = np.arange(ntimes) * 60.0
+    obs_B = np.repeat(truth.predict_B(system["obs_locs"])[np.newaxis], ntimes, axis=0)
+    obs_J = np.repeat(truth.predict_J(J_locs)[np.newaxis, :, :2], ntimes, axis=0)
+    B_std = np.full_like(obs_B, 1e-12)
+    J_std = np.full_like(obs_J, 1e-6)
+    # A missing current observation is skipped at that time step
+    obs_J[2, 0] = np.nan
+
+    def kalman():
+        return pysecs.KalmanSECS(
+            pysecs.SECS(sec_df_loc=truth.sec_df_loc, sec_cf_loc=truth.sec_cf_loc),
+            tau=600.0,
+            prior_std=1e5,
+        )
+
+    with pytest.warns(UserWarning, match="Fukushima"):
+        ground = kalman().fit(system["obs_locs"], obs_B, times, B_std)
+    joint = kalman().fit(
+        system["obs_locs"], obs_B, times, B_std, J_loc=J_locs, obs_J=obs_J, J_std=J_std
+    )
+
+    ncf = len(truth.sec_cf_loc)
+    true_cf = truth.sec_amps[0, -ncf:]
+    assert_allclose(joint.sec_amps[:, -ncf:], np.tile(true_cf, (ntimes, 1)), rtol=1e-3)
+    # From the ground alone the cf amplitudes stay at their prior mean
+    assert_allclose(ground.sec_amps[:, -ncf:], 0.0, atol=1e-6)
+    # ... with their prior uncertainty, which the currents reduce
+    assert np.all(joint.sec_amps_var[:, -ncf:] < ground.sec_amps_var[:, -ncf:])
+
+    # The joint estimate reproduces the observed currents and FACs
+    pred_J = joint.predict_J(J_locs)[:, :, :2]
+    assert_allclose(pred_J[1], obs_J[1], atol=1e-3 * np.max(np.abs(obs_J[1])))
+    area = 1e10
+    assert_allclose(joint.fac_density(area)[0], truth.fac_density(area), rtol=1e-3)
+
+
+def test_joint_fit_bad_arguments(system):
+    """Joint Kalman fits validate their inputs like SECS.fit."""
+    kf = _kalman(system["sec_locs"], tau=60.0)
+    args = (system["obs_locs"], system["obs_B"], system["times"], system["obs_std"])
+    with pytest.raises(ValueError, match="must be given together"):
+        kf.fit(*args, obs_J=system["obs_B"])
+    with pytest.raises(ValueError, match="requires both obs_std and J_std"):
+        kf.fit(*args, J_loc=system["obs_locs"], obs_J=system["obs_B"])
+
+
+def test_fit_J_auto_prior_std(system):
+    """prior_std is estimated from a snapshot fit of the currents."""
+    truth, J_locs = _current_system(system)
+    obs_J = np.repeat(truth.predict_J(J_locs)[np.newaxis, :, :2], 3, axis=0)
+    obs_J[1, 0] = np.nan
+
+    kf = pysecs.KalmanSECS(
+        pysecs.SECS(sec_df_loc=truth.sec_df_loc, sec_cf_loc=truth.sec_cf_loc),
+        tau=60.0,
+    )
+    with pytest.warns(UserWarning, match="not located on a SEC shell") as record:
+        kf.fit_J(J_locs + np.array([0.0, 0.0, 1.0]), obs_J, np.arange(3) * 60.0)
+    assert record[0].filename == __file__
+    kf.fit_J(J_locs, obs_J, np.arange(3) * 60.0)
+    assert np.all(np.isfinite(kf.sec_amps))
+    assert np.all(kf.sec_amps_var > 0)

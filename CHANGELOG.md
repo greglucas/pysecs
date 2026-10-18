@@ -12,11 +12,15 @@
 - FAC densities: `fac_density()` on `SECS` and `KalmanSECS` computes the
   field-aligned current density (and its variance) at each curl-free SEC
   from the fitted amplitudes and grid cell areas.
+- `KalmanSECS` fits currents with `fit_J()` and joint magnetic field +
+  current observations with the same keyword-only arguments as `SECS.fit()`.
 
 ### Bug fixes
 
 - The cached transfer matrices of `fit()` and `predict()` are recomputed when
   the location array passed in is modified in place between calls.
+- `KalmanSECS.fit()` now warns about curl-free SECs that ground observations
+  cannot constrain, like `SECS.fit()`, also when `prior_std` is given.
 
 ### Documentation
 

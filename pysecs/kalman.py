@@ -10,8 +10,8 @@ estimates them with a Kalman filter and Rauch-Tung-Striebel smoother:
   model ``m_t = phi_t m_{t-1} + w_t`` with ``phi_t = exp(-dt/tau)``,
   which relaxes toward zero (quiet conditions) with correlation time
   ``tau`` and stationary variance ``prior_std**2``
-- observations: the SECS magnetic field transfer matrix with
-  independent Gaussian errors given by ``obs_std``
+- observations: the SECS magnetic field and/or current transfer
+  matrices with independent Gaussian errors given by ``obs_std``
 
 The stationary prior plays the role that the truncated-SVD ``epsilon``
 plays in the snapshot fit, but it is applied consistently at every time
@@ -149,6 +149,10 @@ class KalmanSECS:
         obs_B: np.ndarray,
         times: np.ndarray,
         obs_std: np.ndarray | None = None,
+        *,
+        J_loc: np.ndarray | None = None,
+        obs_J: np.ndarray | None = None,
+        J_std: np.ndarray | None = None,
     ) -> "KalmanSECS":
         """Run the filter (and smoother) over a time series of observations.
 
@@ -170,32 +174,77 @@ class KalmanSECS:
             1-sigma standard errors of the observations. Infinite values
             eliminate an observation at that time step, e.g. for station
             dropouts. Default: ones (equal weights).
-        """
-        if obs_B.ndim == 2:
-            obs_B = obs_B[np.newaxis, ...]
-        if obs_std is None:
-            obs_std = np.ones_like(obs_B)
 
-        ntimes = len(obs_B)
+        J_loc, obs_J, J_std : ndarray, optional
+            Current density observations to fit jointly with the magnetic
+            field, as in :meth:`SECS.fit`. Non-finite values of ``obs_J``
+            are treated as missing data.
+
+        Returns
+        -------
+        KalmanSECS
+            This estimator, with the amplitudes stored in ``sec_amps``.
+        """
+        stacked = self.secs._stack_obs(obs_loc, obs_B, obs_std, J_loc, obs_J, J_std)
+        return self._fit(*stacked, times)
+
+    def fit_J(
+        self,
+        obs_loc: np.ndarray,
+        obs_J: np.ndarray,
+        times: np.ndarray,
+        obs_std: np.ndarray | None = None,
+    ) -> "KalmanSECS":
+        """Run the filter (and smoother) over a time series of currents.
+
+        The current density counterpart of :meth:`fit`; see
+        :meth:`SECS.fit_J` for the current observations.
+
+        Parameters
+        ----------
+        obs_loc : ndarray (nobs, 3 [lat, lon, r])
+            Current observation locations on a SEC shell, fixed over the
+            time series.
+
+        obs_J : ndarray (ntimes, nobs, 2 [Jx, Jy] or 3 [Jx, Jy, Jz])
+            Observed horizontal sheet current densities (A/m). Non-finite
+            values are treated as missing data at that time step.
+
+        times : ndarray (ntimes,)
+            Observation times, see :meth:`fit`.
+
+        obs_std : ndarray, same shape as ``obs_J``, optional
+            1-sigma standard errors of the currents, see :meth:`fit`.
+
+        Returns
+        -------
+        KalmanSECS
+            This estimator, with the amplitudes stored in ``sec_amps``.
+        """
+        stacked = self.secs._stack_obs(None, None, None, obs_loc, obs_J, obs_std)
+        return self._fit(*stacked, times)
+
+    def _fit(
+        self,
+        H_full: np.ndarray,
+        obs_flat: np.ndarray,
+        std_flat: np.ndarray,
+        times: np.ndarray,
+    ) -> "KalmanSECS":
+        """Run the filter (and smoother) on flattened observations."""
+        ntimes = len(obs_flat)
         times = np.asarray(times)
         if times.shape != (ntimes,):
             raise ValueError("times must be 1-D with one entry per time step")
         dt = self._delta_seconds(times)
         if np.any(dt <= 0):
             raise ValueError("times must be strictly increasing")
-
-        obs_B_flat = obs_B.reshape(ntimes, -1)
-        obs_std_flat = obs_std.reshape(ntimes, -1).astype(float)
-
-        # Observation operator from the SECS transfer functions
-        H_full = self.secs._calc_T(obs_loc).reshape(-1, self.secs.nsec)
+        std_flat = std_flat.astype(float)
 
         prior_std = self.prior_std
         if prior_std is None:
             # Estimate the amplitude scale from an ordinary snapshot fit
-            self.secs.fit(
-                obs_loc, obs_B, obs_std=obs_std, epsilon=self.epsilon, mode=self.mode
-            )
+            self.secs._fit(H_full, obs_flat, std_flat, self.epsilon, self.mode)
             rms = np.sqrt(np.mean(self.secs.sec_amps**2))
             prior_std = rms if rms > 0 else 1.0
 
@@ -217,9 +266,7 @@ class KalmanSECS:
                 P = phi[t - 1] ** 2 * P
                 P[np.diag_indices_from(P)] += (1 - phi[t - 1] ** 2) * prior_var
 
-            m, P = self._measurement_update(
-                m, P, H_full, obs_B_flat[t], obs_std_flat[t]
-            )
+            m, P = self._measurement_update(m, P, H_full, obs_flat[t], std_flat[t])
             m_f[t] = m
             P_f[t] = P
 
