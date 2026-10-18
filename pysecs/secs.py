@@ -78,6 +78,8 @@ class SECS:
         # real location arrays, so the first use fills the cache.
         self._obs_loc = np.empty((0, 3))
         self._T_obs_flat = np.empty((0, self.nsec))
+        self._obs_loc_J = np.empty((0, 3))
+        self._T_obs_J_flat = np.empty((0, self.nsec))
         self._pred_loc_B = np.empty((0, 3))
         self._T_pred_B = np.empty((0, 3, self.nsec))
         self._pred_loc_J = np.empty((0, 3))
@@ -234,6 +236,10 @@ class SECS:
         robust: str | None = None,
         robust_maxiter: int = 20,
         robust_tol: float = 1e-6,
+        *,
+        J_loc: np.ndarray | None = None,
+        obs_J: np.ndarray | None = None,
+        J_std: np.ndarray | None = None,
     ) -> "SECS":
         """Fits the SECS to the given observations.
 
@@ -241,6 +247,13 @@ class SECS:
         this function fits the SEC system to them. It uses singular
         value decomposition (SVD) to fit the SEC amplitudes with the
         `epsilon` parameter used to regularize the solution.
+
+        Sheet current density observations can be fit jointly with the
+        magnetic field by also passing ``J_loc``, ``obs_J`` and
+        ``J_std``. This is useful because ground magnetometers only see
+        the divergence-free (equivalent) currents, while current
+        observations also constrain the curl-free currents and their
+        field-aligned currents (see :meth:`fit_J`).
 
         Parameters
         ----------
@@ -297,52 +310,162 @@ class SECS:
         robust_tol : float
             Relative amplitude change used to declare IRLS convergence.
             Default: 1e-6
-        """
-        if obs_loc.shape[-1] != 3:
-            raise ValueError("Observation locations must have 3 columns (lat, lon, r)")
 
+        J_loc : ndarray (nJ, 3 [lat, lon, r]), optional
+            Locations of current density observations to fit jointly with
+            the magnetic field. Must be given together with ``obs_J``.
+
+        obs_J : ndarray (ntimes, nJ, 2 [Jx, Jy] or 3 [Jx, Jy, Jz]), optional
+            Horizontal sheet current densities (A/m) observed at ``J_loc``,
+            as described in :meth:`fit_J`.
+
+        J_std : ndarray, same shape as ``obs_J``, optional
+            Standard error (1-sigma) of ``obs_J``. Magnetic fields and
+            currents have different units, so a joint fit requires both
+            ``obs_std`` and ``J_std`` to weight them against each other.
+
+        Returns
+        -------
+        SECS
+            This system, with the fitted amplitudes stored in ``sec_amps``.
+        """
+        _check_loc(obs_loc, "Observation")
+        if (J_loc is None) != (obs_J is None):
+            raise ValueError("J_loc and obs_J must be given together")
+
+        if J_loc is None or obs_J is None:
+            self._warn_unconstrained_cf(obs_loc)
+            B_flat, B_std_flat = _flatten_obs(obs_B, obs_std, ncomp=3)
+            return self._fit(
+                self._calc_T_obs(obs_loc),
+                B_flat,
+                B_std_flat,
+                epsilon,
+                mode,
+                robust,
+                robust_maxiter,
+                robust_tol,
+            )
+
+        if obs_std is None or J_std is None:
+            raise ValueError(
+                "A joint fit of magnetic fields and currents requires both "
+                "obs_std and J_std to weight the different units against "
+                "each other"
+            )
+        _check_loc(J_loc, "Current observation")
+        self._warn_off_shell(J_loc)
+        B_flat, B_std_flat = _flatten_obs(obs_B, obs_std, ncomp=3)
+        J_flat, J_std_flat = _flatten_obs(obs_J, J_std, ncomp=2)
+        if len(B_flat) != len(J_flat):
+            raise ValueError("obs_B and obs_J must have the same number of time steps")
+
+        # Stack the magnetic field and current equations into one system
+        return self._fit(
+            np.vstack([self._calc_T_obs(obs_loc), self._calc_T_obs(J_loc, J=True)]),
+            np.hstack([B_flat, J_flat]),
+            np.hstack([B_std_flat, J_std_flat]),
+            epsilon,
+            mode,
+            robust,
+            robust_maxiter,
+            robust_tol,
+        )
+
+    def fit_J(
+        self,
+        obs_loc: np.ndarray,
+        obs_J: np.ndarray,
+        obs_std: np.ndarray | None = None,
+        epsilon: float = 0.05,
+        mode: str = "relative",
+        robust: str | None = None,
+        robust_maxiter: int = 20,
+        robust_tol: float = 1e-6,
+    ) -> "SECS":
+        """Fits the SECS to observed sheet current densities.
+
+        This is the current density counterpart of :meth:`fit`. Fitting
+        divergence-free and curl-free SECs to a horizontal current field
+        decomposes it into its rotational and divergent parts (a Helmholtz
+        decomposition on the sphere), and the curl-free amplitudes give
+        the associated field-aligned currents via :meth:`predict_J`.
+        Typical inputs are currents derived from radar electric fields and
+        conductances, or the output of a numerical model. To combine
+        currents with magnetic field observations, use the joint fit in
+        :meth:`fit`.
+
+        Parameters
+        ----------
+        obs_loc : ndarray (nobs, 3 [lat, lon, r])
+            Latitude, longitude, and radius of the current observations.
+            Currents only exist on the SEC shells, so the radius must
+            equal the radius of the SEC shell being fit.
+
+        obs_J : ndarray (ntimes, nobs, 2 [Jx, Jy] or 3 [Jx, Jy, Jz])
+            The observed horizontal sheet current densities (A/m). A third
+            (radial) component, such as the output of :meth:`predict_J`,
+            is ignored: it is not a sheet current, but the field-aligned
+            current implied by the curl-free amplitudes.
+
+        obs_std : ndarray, same shape as ``obs_J``, optional
+            Standard error (1-sigma) of the current components, see
+            :meth:`fit`.
+            Default: equal weights
+
+        epsilon, mode, robust, robust_maxiter, robust_tol :
+            Regularization and robust fitting options, see :meth:`fit`.
+
+        Returns
+        -------
+        SECS
+            This system, with the fitted amplitudes stored in ``sec_amps``.
+
+        Notes
+        -----
+        The current of a SEC is singular at its own pole, but averages to
+        zero over any small cap around it. Observations located exactly at
+        a pole therefore receive no contribution from that SEC, so currents
+        can be fit at the SEC grid points themselves.
+        """
+        _check_loc(obs_loc, "Observation")
+        self._warn_off_shell(obs_loc)
+        J_flat, J_std_flat = _flatten_obs(obs_J, obs_std, ncomp=2)
+        return self._fit(
+            self._calc_T_obs(obs_loc, J=True),
+            J_flat,
+            J_std_flat,
+            epsilon,
+            mode,
+            robust,
+            robust_maxiter,
+            robust_tol,
+        )
+
+    def _fit(
+        self,
+        T_obs_flat: np.ndarray,
+        obs_flat: np.ndarray,
+        std_flat: np.ndarray,
+        epsilon: float,
+        mode: str,
+        robust: str | None,
+        robust_maxiter: int,
+        robust_tol: float,
+    ) -> "SECS":
+        """Fit the amplitudes to flattened observations and transfer matrix."""
         if robust not in (None, "huber", "bisquare"):
             raise ValueError(
                 f"Unknown robust weighting: '{robust}', "
                 "options are None, 'huber', 'bisquare'"
             )
 
-        if self.has_cf and np.any(self.sec_cf_loc[:, 2] >= obs_loc[:, 2].max()):
-            warnings.warn(
-                "Some curl-free SECs are at or above all observation "
-                "locations. The magnetic field of a curl-free SEC is "
-                "identically zero at and below its current shell "
-                "(Fukushima's theorem), so these amplitudes are not "
-                "constrained by the observations and will be set to zero. "
-                "Add observations above the current shell (e.g. satellite "
-                "data) to fit curl-free systems.",
-                stacklevel=2,
-            )
-
-        if obs_B.ndim == 2:
-            # Just a single snapshot given, so expand the dimensionality
-            obs_B = obs_B[np.newaxis, ...]
-
-        # Assume unit standard error of all measurements
-        if obs_std is None:
-            obs_std = np.ones_like(obs_B)
-
-        ntimes = len(obs_B)
-        # Flatten the components to do the math with shape (ntimes, nvariables)
-        obs_B_flat = obs_B.reshape(ntimes, -1)
-        obs_std_flat = obs_std.reshape(ntimes, -1)
-
-        # Calculate the transfer functions, using cached values if possible
-        if not np.array_equal(obs_loc, self._obs_loc):
-            self._T_obs_flat = self._calc_T(obs_loc).reshape(-1, self.nsec)
-            self._obs_loc = obs_loc
-
-        self._solve_amplitudes(obs_B_flat, obs_std_flat, epsilon, mode)
-
+        self._solve_amplitudes(T_obs_flat, obs_flat, std_flat, epsilon, mode)
         if robust is not None:
             self._irls(
-                obs_B_flat,
-                obs_std_flat,
+                T_obs_flat,
+                obs_flat,
+                std_flat,
                 epsilon,
                 mode,
                 robust,
@@ -351,15 +474,65 @@ class SECS:
             )
         return self
 
+    def _calc_T_obs(self, obs_loc: np.ndarray, J: bool = False) -> np.ndarray:
+        """Flattened transfer matrix to the fitted observation components.
+
+        The magnetic field (J=False) uses all three components and the
+        currents (J=True) the two horizontal ones. Results are cached by
+        observation location since repeated fits often share them.
+        """
+        if not J:
+            if not np.array_equal(obs_loc, self._obs_loc):
+                self._T_obs_flat = self._calc_T(obs_loc).reshape(-1, self.nsec)
+                self._obs_loc = obs_loc
+            return self._T_obs_flat
+
+        if not np.array_equal(obs_loc, self._obs_loc_J):
+            T = self._calc_J(obs_loc)[:, :2, :]
+            # A SEC's current is singular at its own pole, but its average
+            # over any small cap around the pole is zero
+            T[~np.isfinite(T)] = 0.0
+            self._T_obs_J_flat = T.reshape(-1, self.nsec)
+            self._obs_loc_J = obs_loc
+        return self._T_obs_J_flat
+
+    def _warn_unconstrained_cf(self, obs_loc: np.ndarray) -> None:
+        """Warn if magnetic observations cannot constrain the cf SECs."""
+        if self.has_cf and np.any(self.sec_cf_loc[:, 2] >= obs_loc[:, 2].max()):
+            warnings.warn(
+                "Some curl-free SECs are at or above all observation "
+                "locations. The magnetic field of a curl-free SEC is "
+                "identically zero at and below its current shell "
+                "(Fukushima's theorem), so these amplitudes are not "
+                "constrained by the observations and will be set to zero. "
+                "Add observations above the current shell (e.g. satellite "
+                "data) or current observations (joint fit) to fit "
+                "curl-free systems.",
+                stacklevel=3,
+            )
+
+    def _warn_off_shell(self, obs_loc: np.ndarray) -> None:
+        """Warn if current observations are not on any SEC shell."""
+        sec_r = np.concatenate([self.sec_df_loc[:, 2], self.sec_cf_loc[:, 2]])
+        if not np.all(np.isin(obs_loc[:, 2], sec_r)):
+            warnings.warn(
+                "Some current observations are not located on a SEC shell. "
+                "SEC currents only flow on their shell, so these observations "
+                "do not constrain the fit. Set the observation radius equal "
+                "to the SEC shell radius.",
+                stacklevel=3,
+            )
+
     def _solve_amplitudes(
         self,
-        obs_B_flat: np.ndarray,
+        T_obs_flat: np.ndarray,
+        obs_flat: np.ndarray,
         obs_std_flat: np.ndarray,
         epsilon: float,
         mode: str,
     ) -> None:
         """Solve for the SEC amplitudes and variances of all time steps."""
-        ntimes = len(obs_B_flat)
+        ntimes = len(obs_flat)
         # Store the fit sec_amps in the object
         self.sec_amps = np.empty((ntimes, self.nsec))
         self.sec_amps_var = np.empty((ntimes, self.nsec))
@@ -385,8 +558,8 @@ class SECS:
         VWU_patterns = []
         for i, pattern_std in enumerate(patterns):
             t_mask = pattern_index == i
-            VWU = self._compute_VWU(self._T_obs_flat, pattern_std, epsilon, mode)
-            self.sec_amps[t_mask] = (obs_B_flat[t_mask] / pattern_std) @ VWU.T
+            VWU = self._compute_VWU(T_obs_flat, pattern_std, epsilon, mode)
+            self.sec_amps[t_mask] = (obs_flat[t_mask] / pattern_std) @ VWU.T
 
             # amps = VWU @ (B / std). With Var(B) = std**2 the scaled
             # observations have unit variance, so Var(amps) = sum(VWU**2).
@@ -400,7 +573,8 @@ class SECS:
 
     def _irls(
         self,
-        obs_B_flat: np.ndarray,
+        T_obs_flat: np.ndarray,
+        obs_flat: np.ndarray,
         obs_std_flat: np.ndarray,
         epsilon: float,
         mode: str,
@@ -424,10 +598,10 @@ class SECS:
 
         prev_amps = self.sec_amps
         for _ in range(maxiter):
-            pred = prev_amps @ self._T_obs_flat.T
+            pred = prev_amps @ T_obs_flat.T
             resid = np.where(
                 finite,
-                (obs_B_flat - pred) / np.where(finite, obs_std_flat, 1.0),
+                (obs_flat - pred) / np.where(finite, obs_std_flat, 1.0),
                 np.nan,
             )
 
@@ -450,7 +624,7 @@ class SECS:
             with np.errstate(divide="ignore"):
                 eff_std = obs_std_flat / weights
 
-            self._solve_amplitudes(obs_B_flat, eff_std, epsilon, mode)
+            self._solve_amplitudes(T_obs_flat, obs_flat, eff_std, epsilon, mode)
 
             amp_scale = np.max(np.abs(self.sec_amps), initial=0.0)
             amp_change = np.max(np.abs(self.sec_amps - prev_amps), initial=0.0)
@@ -642,6 +816,41 @@ class SECS:
                 J = J1
 
         return J
+
+
+def _check_loc(loc: np.ndarray, name: str) -> None:
+    """Raise if the locations are not (n, 3 [lat, lon, r])."""
+    if loc.shape[-1] != 3:
+        raise ValueError(f"{name} locations must have 3 columns (lat, lon, r)")
+
+
+def _flatten_obs(
+    values: np.ndarray, std: np.ndarray | None, ncomp: int
+) -> tuple[np.ndarray, np.ndarray]:
+    """Flatten observations and their standard errors to (ntimes, nvalues).
+
+    A single snapshot gains a time dimension, missing standard errors
+    default to one, and only the first ``ncomp`` vector components are kept.
+    """
+    values = np.asarray(values)
+    if values.ndim == 2:
+        # Just a single snapshot given, so expand the dimensionality
+        values = values[np.newaxis, ...]
+    if values.shape[-1] not in (ncomp, 3):
+        allowed = " or ".join(str(n) for n in sorted({ncomp, 3}))
+        raise ValueError(
+            f"Observations must have {allowed} vector components, "
+            f"got {values.shape[-1]}"
+        )
+
+    # Assume unit standard error of all measurements
+    std = np.ones_like(values) if std is None else np.broadcast_to(std, values.shape)
+
+    ntimes = len(values)
+    return (
+        values[..., :ncomp].reshape(ntimes, -1),
+        std[..., :ncomp].reshape(ntimes, -1),
+    )
 
 
 def T_df(obs_loc: np.ndarray, sec_loc: np.ndarray) -> np.ndarray:

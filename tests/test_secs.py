@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
@@ -910,3 +912,161 @@ def test_fit_robust_bad_name():
     obs_B = np.ones((1, 1, 3))
     with pytest.raises(ValueError, match="Unknown robust weighting"):
         secs.fit(obs_loc, obs_B, robust="tukey")
+
+
+def _current_test_system():
+    """A small df+cf system with ground and shell (current) observations."""
+    rng = np.random.default_rng(7)
+    r_shell = R_EARTH + 110e3
+    lat, lon = np.meshgrid(np.arange(-4, 4.1, 2.0), np.arange(-4, 4.1, 2.0))
+    sec_locs = np.column_stack([lat.ravel(), lon.ravel(), np.full(lat.size, r_shell)])
+    nsec = len(sec_locs)
+    true_amps = rng.normal(0, 1e4, 2 * nsec)
+
+    truth = pysecs.SECS(sec_df_loc=sec_locs, sec_cf_loc=sec_locs)
+    truth.sec_amps = true_amps[np.newaxis]
+
+    nobs = 60
+    ground_locs = np.column_stack(
+        [rng.uniform(-5, 5, nobs), rng.uniform(-5, 5, nobs), np.full(nobs, R_EARTH)]
+    )
+    J_locs = ground_locs.copy()
+    J_locs[:, 2] = r_shell
+    return truth, ground_locs, J_locs
+
+
+def test_fit_J_recovers_amplitudes():
+    """Noise-free currents determine both df and cf amplitudes."""
+    truth, _, J_locs = _current_test_system()
+    obs_J = truth.predict_J(J_locs)
+
+    secs = pysecs.SECS(sec_df_loc=truth.sec_df_loc, sec_cf_loc=truth.sec_cf_loc)
+    assert secs.fit_J(J_locs, obs_J[:, :2], epsilon=1e-8) is secs
+    assert_allclose(secs.sec_amps, truth.sec_amps, rtol=1e-6)
+
+
+def test_fit_J_ignores_radial_component():
+    """A third (radial FAC) component, as returned by predict_J, is ignored."""
+    truth, _, J_locs = _current_test_system()
+    obs_J = truth.predict_J(J_locs)
+    obs_J_mangled = obs_J.copy()
+    obs_J_mangled[:, 2] = 1e10
+
+    secs2 = pysecs.SECS(sec_df_loc=truth.sec_df_loc, sec_cf_loc=truth.sec_cf_loc)
+    secs2.fit_J(J_locs, obs_J[:, :2])
+    secs3 = pysecs.SECS(sec_df_loc=truth.sec_df_loc, sec_cf_loc=truth.sec_cf_loc)
+    secs3.fit_J(J_locs, obs_J_mangled)
+    assert_allclose(secs3.sec_amps, secs2.sec_amps)
+
+
+def test_fit_J_at_sec_poles():
+    """Currents observed exactly at the SEC poles give a finite fit."""
+    truth, _, _ = _current_test_system()
+    grid = truth.sec_df_loc
+    # Truth on a shifted grid so the observations are not at its poles
+    shifted = grid + np.array([1.0, 1.0, 0.0])
+    truth = pysecs.SECS(sec_df_loc=shifted, sec_cf_loc=shifted)
+    truth.sec_amps = np.full((1, truth.nsec), 1e4)
+
+    secs = pysecs.SECS(sec_df_loc=grid)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        secs.fit_J(secs.sec_df_loc, truth.predict_J(secs.sec_df_loc))
+    assert np.all(np.isfinite(secs.sec_amps))
+    assert np.all(np.isfinite(secs.sec_amps_var))
+
+
+def test_fit_J_off_shell_warns():
+    """Currents only flow on the SEC shells, so other radii warn."""
+    truth, ground_locs, J_locs = _current_test_system()
+    secs = pysecs.SECS(sec_df_loc=truth.sec_df_loc)
+    with pytest.warns(UserWarning, match="not located on a SEC shell"):
+        secs.fit_J(ground_locs, truth.predict_J(J_locs))
+
+
+def test_fit_J_bad_shapes():
+    """Malformed current observations raise errors."""
+    truth, _, J_locs = _current_test_system()
+    secs = pysecs.SECS(sec_df_loc=truth.sec_df_loc)
+    with pytest.raises(ValueError, match="2 or 3 vector components"):
+        secs.fit_J(J_locs, np.ones((len(J_locs), 4)))
+    with pytest.raises(ValueError, match="must have 3 columns"):
+        secs.fit_J(J_locs[:, :2], np.ones((len(J_locs), 2)))
+
+
+def test_fit_J_multi_time_and_variance():
+    """fit_J supports multiple time steps and prediction variances."""
+    truth, _, J_locs = _current_test_system()
+    obs_J = truth.predict_J(J_locs)[:, :2]
+    obs_J = np.stack([obs_J, 2 * obs_J])
+
+    secs = pysecs.SECS(sec_df_loc=truth.sec_df_loc, sec_cf_loc=truth.sec_cf_loc)
+    secs.fit_J(J_locs, obs_J, obs_std=np.full(obs_J.shape[1:], 0.01), epsilon=1e-8)
+    assert_allclose(secs.sec_amps[1], 2 * secs.sec_amps[0])
+
+    pred, var = secs.predict_J(J_locs[:5], return_var=True)
+    assert pred.shape == var.shape == (2, 5, 3)
+    assert np.all(var >= 0)
+
+
+def test_fit_J_robust_rejects_spike():
+    """Robust fitting works for currents like it does for magnetic fields."""
+    truth, _, J_locs = _current_test_system()
+    obs_J = truth.predict_J(J_locs)[:, :2]
+    obs_J[0] += 100 * np.max(np.abs(obs_J))
+
+    secs = pysecs.SECS(sec_df_loc=truth.sec_df_loc, sec_cf_loc=truth.sec_cf_loc)
+    secs.fit_J(J_locs, obs_J, epsilon=1e-8, robust="bisquare")
+    assert_allclose(secs.sec_amps, truth.sec_amps, rtol=1e-4)
+
+
+def test_fit_joint_recovers_curl_free():
+    """Joint ground B + J fits constrain the cf amplitudes without warning."""
+    truth, ground_locs, J_locs = _current_test_system()
+    obs_B = truth.predict_B(ground_locs)
+    obs_J = truth.predict_J(J_locs)[:, :2]
+
+    secs = pysecs.SECS(sec_df_loc=truth.sec_df_loc, sec_cf_loc=truth.sec_cf_loc)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        secs.fit(
+            ground_locs,
+            obs_B,
+            np.full_like(obs_B, 1e-9),
+            epsilon=1e-8,
+            J_loc=J_locs,
+            obs_J=obs_J,
+            J_std=np.full_like(obs_J, 1e-3),
+        )
+    assert_allclose(secs.sec_amps, truth.sec_amps, rtol=1e-6)
+
+    # Both kinds of observations contribute to the propagated variances
+    pred, var = secs.predict_B(ground_locs, return_var=True)
+    assert_allclose(pred, obs_B, atol=1e-6 * np.max(np.abs(obs_B)))
+    assert np.all(var > 0)
+
+
+def test_fit_joint_bad_arguments():
+    """Joint fits need complete J inputs, uncertainties and matching times."""
+    truth, ground_locs, J_locs = _current_test_system()
+    obs_B = truth.predict_B(ground_locs)
+    obs_J = truth.predict_J(J_locs)
+    B_std = np.ones_like(obs_B)
+    J_std = np.ones_like(obs_J)
+    secs = pysecs.SECS(sec_df_loc=truth.sec_df_loc)
+
+    with pytest.raises(ValueError, match="must be given together"):
+        secs.fit(ground_locs, obs_B, B_std, obs_J=obs_J)
+    with pytest.raises(ValueError, match="requires both obs_std and J_std"):
+        secs.fit(ground_locs, obs_B, J_loc=J_locs, obs_J=obs_J, J_std=J_std)
+    with pytest.raises(ValueError, match="requires both obs_std and J_std"):
+        secs.fit(ground_locs, obs_B, B_std, J_loc=J_locs, obs_J=obs_J)
+    with pytest.raises(ValueError, match="same number of time steps"):
+        secs.fit(
+            ground_locs,
+            np.stack([obs_B, obs_B]),
+            np.stack([B_std, B_std]),
+            J_loc=J_locs,
+            obs_J=obs_J,
+            J_std=J_std,
+        )

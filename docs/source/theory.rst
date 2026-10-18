@@ -150,6 +150,47 @@ to weights so that observations inconsistent with any smooth current
 system (single-station spikes, baseline jumps) are automatically
 downweighted.
 
+Fitting currents
+----------------
+
+The same machinery fits the SEC amplitudes to observed horizontal sheet
+current densities with :meth:`pysecs.SECS.fit_J`, replacing the
+magnetic transfer matrix :math:`T` by the current transfer matrix of
+Eqs. 6 and 7. Any horizontal current field on a sphere is the sum of a
+divergence-free and a curl-free part (a Helmholtz decomposition), and
+the df and cf SECs are bases for these two parts, so this fit
+decomposes the currents. Because the horizontal current is closed by
+the field-aligned currents, :math:`\nabla \cdot \vec{J}_{cf} = -j_r`,
+the cf amplitudes also give the FACs: each cf SEC carries a FAC of its
+amplitude into the shell at its pole, i.e. a FAC density of the
+amplitude divided by the area of its grid cell.
+
+Why would one fit currents?
+
+- **Field-aligned currents.** Ground magnetometers are blind to the cf
+  part of the currents, but currents derived from other observations,
+  e.g. radar electric fields multiplied by conductances (Ohm's law), or
+  the output of a numerical model, contain both parts. Fitting them
+  separates the equivalent (df) currents from the cf currents and FACs.
+- **Joint estimation.** Ground magnetometers usually cover a much wider
+  area than current estimates. ``fit(..., J_loc=, obs_J=, J_std=)``
+  stacks the magnetic field and current equations into one
+  least-squares problem, so the wide ground coverage constrains the
+  equivalent currents everywhere while the current observations add
+  the cf part where they exist. Since the two kinds of observations
+  have different units, their standard errors determine how they are
+  weighted against each other and both must be supplied.
+
+Current observations must be located on a SEC shell, because the SEC
+currents only flow on their shell. Only the horizontal components are
+fit; the radial component returned by :meth:`pysecs.SECS.predict_J` is
+the FAC implied by the cf amplitudes rather than a sheet current. The
+current of a SEC is singular at its own pole, but averages to zero
+over any small cap around it, so an observation located exactly at a
+pole gets no contribution from that SEC. This allows currents to be fit
+at the grid points themselves, but predictions should still be made
+away from the poles.
+
 Temporal estimation
 -------------------
 

@@ -12,6 +12,11 @@
   SECS solutions.
 - Automatic grid generation: `make_grid()` builds a SECS pole grid directly
   from an observation network.
+- Current fitting: `fit_J()` fits the SECS to observed horizontal sheet
+  currents, decomposing them into divergence-free and curl-free parts and
+  their field-aligned currents. `fit()` can also fit magnetic field and
+  current observations jointly with the new keyword-only `J_loc`, `obs_J` and
+  `J_std` arguments.
 
 ### Bug fixes
 
