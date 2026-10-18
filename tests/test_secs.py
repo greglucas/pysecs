@@ -1215,6 +1215,8 @@ def test_fac_density_errors():
         pysecs.SECS(sec_df_loc=sec_loc).fac_density(1.0)
     with pytest.raises(ValueError, match=r"call \.fit"):
         pysecs.SECS(sec_cf_loc=sec_loc).fac_density(1.0)
+    with pytest.raises(ValueError, match="one entry per curl-free SEC"):
+        pysecs.SECS(sec_cf_loc=sec_loc).fit_unit_currents().fac_density([1.0, 2.0])
     secs = pysecs.SECS(sec_cf_loc=sec_loc).fit_unit_currents()
     with pytest.raises(ValueError, match="Prediction variances require"):
         secs.fac_density(1.0, return_var=True)

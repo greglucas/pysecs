@@ -832,6 +832,10 @@ class SECS:
             raise ValueError("FAC densities require curl-free SECs")
 
         ncf = len(self.sec_cf_loc)
+        if np.size(cell_area) not in (1, ncf):
+            raise ValueError(
+                "cell_area must be a scalar or have one entry per curl-free SEC"
+            )
         area = np.broadcast_to(np.asarray(cell_area, dtype=float), (ncf,))
         r = self.sec_cf_loc[:, 2]
         # Line current into the shell spread over the cell, minus the
