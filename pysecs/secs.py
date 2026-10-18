@@ -323,6 +323,8 @@ class SECS:
             Standard error (1-sigma) of ``obs_J``. Magnetic fields and
             currents have different units, so a joint fit requires both
             ``obs_std`` and ``J_std`` to weight them against each other.
+            Both must be in SI units (T and A/m), the units of the transfer
+            functions.
 
         Returns
         -------

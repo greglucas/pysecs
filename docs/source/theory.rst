@@ -182,7 +182,8 @@ Why would one fit currents?
   equivalent currents everywhere while the current observations add
   the cf part where they exist. Since the two kinds of observations
   have different units, their standard errors determine how they are
-  weighted against each other and both must be supplied.
+  weighted against each other and both must be supplied, in SI units
+  (T and A/m).
 
 Current observations must be located on a SEC shell, because the SEC
 currents only flow on their shell. Only the horizontal components are

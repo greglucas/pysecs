@@ -1,6 +1,26 @@
 # Changelog
 
-## v0.4.0 (unreleased)
+## v0.5.0 (unreleased)
+
+### New features
+
+- Current fitting: `fit_J()` fits the SECS to observed horizontal sheet
+  currents, decomposing them into divergence-free and curl-free parts and
+  their field-aligned currents. `fit()` can also fit magnetic field and
+  current observations jointly with the new keyword-only `J_loc`, `obs_J` and
+  `J_std` arguments.
+
+### Bug fixes
+
+- The cached transfer matrices of `fit()` and `predict()` are recomputed when
+  the location array passed in is modified in place between calls.
+
+### Documentation
+
+- New gallery example for current and joint magnetic field + current fits,
+  and a theory section on fitting currents.
+
+## v0.4.0 (2026-07-09)
 
 ### New features
 
@@ -12,11 +32,6 @@
   SECS solutions.
 - Automatic grid generation: `make_grid()` builds a SECS pole grid directly
   from an observation network.
-- Current fitting: `fit_J()` fits the SECS to observed horizontal sheet
-  currents, decomposing them into divergence-free and curl-free parts and
-  their field-aligned currents. `fit()` can also fit magnetic field and
-  current observations jointly with the new keyword-only `J_loc`, `obs_J` and
-  `J_std` arguments.
 
 ### Bug fixes
 
