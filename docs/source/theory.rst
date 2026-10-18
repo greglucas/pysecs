@@ -163,7 +163,9 @@ decomposes the currents. Because the horizontal current is closed by
 the field-aligned currents, :math:`\nabla \cdot \vec{J}_{cf} = -j_r`,
 the cf amplitudes also give the FACs: each cf SEC carries a FAC of its
 amplitude into the shell at its pole, i.e. a FAC density of the
-amplitude divided by the area of its grid cell.
+amplitude divided by the area of its grid cell. Conversely, observed
+FAC densities map directly onto cf amplitudes (density times cell area)
+without a separate fit.
 
 Why would one fit currents?
 
