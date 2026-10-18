@@ -28,6 +28,7 @@ to fit to data and then predict at any other location.
     :toctree: generated/
     
     SECS.fit
+    SECS.fit_J
     SECS.fit_unit_currents
     SECS.from_observations
     SECS.predict
