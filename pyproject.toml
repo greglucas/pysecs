@@ -78,7 +78,7 @@ addopts = [
 [tool.ruff]
 target-version = "py310"
 lint.select = ["B", "D", "E", "F", "I", "N", "S", "W", "PL", "PT", "UP", "RUF", "ANN"]
-lint.ignore = ["B028", "D203", "D212", "N802", "N803", "N806", "PLR0913", "PLR2004", "S310"]
+lint.ignore = ["B028", "D203", "D212", "N802", "N803", "N806", "PLR0913", "PLR0917", "PLR2004", "S310"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["ANN", "D", "S"]
