@@ -15,6 +15,7 @@
    
       ~SECS.__init__
       ~SECS.fit
+      ~SECS.fit_J
       ~SECS.fit_unit_currents
       ~SECS.from_observations
       ~SECS.predict

@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Fitting B time series (animation) &#8212; pysecs 0.1.0.dev1+unknown.g35d6b71ed documentation</title>
+    <title>Fitting B time series (animation) &#8212; pysecs 0.1.0.dev1+unknown.g5bbfbb304 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=bb53b968"></script>
+    <script src="../_static/documentation_options.js?v=559d9807"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/sg-tags.js?v=d80f6fa4"></script>
@@ -50,11 +50,11 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="API reference" href="../reference/index.html" />
-    <link rel="prev" title="Current surfaces" href="plot_J_surface.html" />
+    <link rel="prev" title="Fitting currents and joint magnetic field + current fits" href="plot_joint_fit.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.1.0.dev1+unknown.g35d6b71ed" />
+  <meta name="docsearch:version" content="0.1.0.dev1+unknown.g5bbfbb304" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -126,8 +126,8 @@
       
     
     
-    <img src="../_static/pysecs.png" class="logo__image only-light" alt="pysecs 0.1.0.dev1+unknown.g35d6b71ed documentation - Home"/>
-    <img src="../_static/pysecs.png" class="logo__image only-dark pst-js-only" alt="pysecs 0.1.0.dev1+unknown.g35d6b71ed documentation - Home"/>
+    <img src="../_static/pysecs.png" class="logo__image only-light" alt="pysecs 0.1.0.dev1+unknown.g5bbfbb304 documentation - Home"/>
+    <img src="../_static/pysecs.png" class="logo__image only-dark pst-js-only" alt="pysecs 0.1.0.dev1+unknown.g5bbfbb304 documentation - Home"/>
   
   
 </a></div>
@@ -370,6 +370,7 @@
 <li class="toctree-l1"><a class="reference internal" href="plot_internal_external.html">Internal / external field separation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plot_robust_kalman.html">Robust fitting and temporal smoothing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plot_J_surface.html">Current surfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot_joint_fit.html">Fitting currents and joint magnetic field + current fits</a></li>
 <li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Fitting B time series (animation)</a></li>
 </ul>
 </div>
@@ -627,42 +628,42 @@ input[type=range].anim-slider {
 </style>
 
 <div class="animation">
-  <img id="_anim_imgfac8dd0ca0d44c3ca826084f9efe2c87">
+  <img id="_anim_imgf72508583b9f4e74b49c30fa928ebcc1">
   <div class="anim-controls">
-    <input id="_anim_sliderfac8dd0ca0d44c3ca826084f9efe2c87" type="range" class="anim-slider"
+    <input id="_anim_sliderf72508583b9f4e74b49c30fa928ebcc1" type="range" class="anim-slider"
            name="points" min="0" max="1" step="1" value="0"
-           oninput="animfac8dd0ca0d44c3ca826084f9efe2c87.set_frame(parseInt(this.value));">
+           oninput="animf72508583b9f4e74b49c30fa928ebcc1.set_frame(parseInt(this.value));">
     <div class="anim-buttons">
-      <button title="Decrease speed" aria-label="Decrease speed" onclick="animfac8dd0ca0d44c3ca826084f9efe2c87.slower()">
+      <button title="Decrease speed" aria-label="Decrease speed" onclick="animf72508583b9f4e74b49c30fa928ebcc1.slower()">
           <i class="fa fa-minus"></i></button>
-      <button title="First frame" aria-label="First frame" onclick="animfac8dd0ca0d44c3ca826084f9efe2c87.first_frame()">
+      <button title="First frame" aria-label="First frame" onclick="animf72508583b9f4e74b49c30fa928ebcc1.first_frame()">
         <i class="fa fa-fast-backward"></i></button>
-      <button title="Previous frame" aria-label="Previous frame" onclick="animfac8dd0ca0d44c3ca826084f9efe2c87.previous_frame()">
+      <button title="Previous frame" aria-label="Previous frame" onclick="animf72508583b9f4e74b49c30fa928ebcc1.previous_frame()">
           <i class="fa fa-step-backward"></i></button>
-      <button title="Play backwards" aria-label="Play backwards" onclick="animfac8dd0ca0d44c3ca826084f9efe2c87.reverse_animation()">
+      <button title="Play backwards" aria-label="Play backwards" onclick="animf72508583b9f4e74b49c30fa928ebcc1.reverse_animation()">
           <i class="fa fa-play fa-flip-horizontal"></i></button>
-      <button title="Pause" aria-label="Pause" onclick="animfac8dd0ca0d44c3ca826084f9efe2c87.pause_animation()">
+      <button title="Pause" aria-label="Pause" onclick="animf72508583b9f4e74b49c30fa928ebcc1.pause_animation()">
           <i class="fa fa-pause"></i></button>
-      <button title="Play" aria-label="Play" onclick="animfac8dd0ca0d44c3ca826084f9efe2c87.play_animation()">
+      <button title="Play" aria-label="Play" onclick="animf72508583b9f4e74b49c30fa928ebcc1.play_animation()">
           <i class="fa fa-play"></i></button>
-      <button title="Next frame" aria-label="Next frame" onclick="animfac8dd0ca0d44c3ca826084f9efe2c87.next_frame()">
+      <button title="Next frame" aria-label="Next frame" onclick="animf72508583b9f4e74b49c30fa928ebcc1.next_frame()">
           <i class="fa fa-step-forward"></i></button>
-      <button title="Last frame" aria-label="Last frame" onclick="animfac8dd0ca0d44c3ca826084f9efe2c87.last_frame()">
+      <button title="Last frame" aria-label="Last frame" onclick="animf72508583b9f4e74b49c30fa928ebcc1.last_frame()">
           <i class="fa fa-fast-forward"></i></button>
-      <button title="Increase speed" aria-label="Increase speed" onclick="animfac8dd0ca0d44c3ca826084f9efe2c87.faster()">
+      <button title="Increase speed" aria-label="Increase speed" onclick="animf72508583b9f4e74b49c30fa928ebcc1.faster()">
           <i class="fa fa-plus"></i></button>
     </div>
-    <form title="Repetition mode" aria-label="Repetition mode" action="#n" name="_anim_loop_selectfac8dd0ca0d44c3ca826084f9efe2c87"
+    <form title="Repetition mode" aria-label="Repetition mode" action="#n" name="_anim_loop_selectf72508583b9f4e74b49c30fa928ebcc1"
           class="anim-state">
-      <input type="radio" name="state" value="once" id="_anim_radio1_fac8dd0ca0d44c3ca826084f9efe2c87"
+      <input type="radio" name="state" value="once" id="_anim_radio1_f72508583b9f4e74b49c30fa928ebcc1"
              >
-      <label for="_anim_radio1_fac8dd0ca0d44c3ca826084f9efe2c87">Once</label>
-      <input type="radio" name="state" value="loop" id="_anim_radio2_fac8dd0ca0d44c3ca826084f9efe2c87"
+      <label for="_anim_radio1_f72508583b9f4e74b49c30fa928ebcc1">Once</label>
+      <input type="radio" name="state" value="loop" id="_anim_radio2_f72508583b9f4e74b49c30fa928ebcc1"
              checked>
-      <label for="_anim_radio2_fac8dd0ca0d44c3ca826084f9efe2c87">Loop</label>
-      <input type="radio" name="state" value="reflect" id="_anim_radio3_fac8dd0ca0d44c3ca826084f9efe2c87"
+      <label for="_anim_radio2_f72508583b9f4e74b49c30fa928ebcc1">Loop</label>
+      <input type="radio" name="state" value="reflect" id="_anim_radio3_f72508583b9f4e74b49c30fa928ebcc1"
              >
-      <label for="_anim_radio3_fac8dd0ca0d44c3ca826084f9efe2c87">Reflect</label>
+      <label for="_anim_radio3_f72508583b9f4e74b49c30fa928ebcc1">Reflect</label>
     </form>
   </div>
 </div>
@@ -672,9 +673,9 @@ input[type=range].anim-slider {
   /* Instantiate the Animation class. */
   /* The IDs given should match those used in the template above. */
   (function() {
-    var img_id = "_anim_imgfac8dd0ca0d44c3ca826084f9efe2c87";
-    var slider_id = "_anim_sliderfac8dd0ca0d44c3ca826084f9efe2c87";
-    var loop_select_id = "_anim_loop_selectfac8dd0ca0d44c3ca826084f9efe2c87";
+    var img_id = "_anim_imgf72508583b9f4e74b49c30fa928ebcc1";
+    var slider_id = "_anim_sliderf72508583b9f4e74b49c30fa928ebcc1";
+    var loop_select_id = "_anim_loop_selectf72508583b9f4e74b49c30fa928ebcc1";
     var frames = new Array(50);
 
   frames[0] = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAoAAAAHgCAYAAAA10dzkAAAAOnRFWHRTb2Z0d2FyZQBNYXRwbG90\
@@ -64798,7 +64799,7 @@ zP8BG5TrwPww77cAAAAASUVORK5CYII=\
     /* set a timeout to make sure all the above elements are created before
        the object is initialized. */
     setTimeout(function() {
-        animfac8dd0ca0d44c3ca826084f9efe2c87 = new Animation(frames, img_id, slider_id, 50.0,
+        animf72508583b9f4e74b49c30fa928ebcc1 = new Animation(frames, img_id, slider_id, 50.0,
                                  loop_select_id);
     }, 0);
   })()
@@ -64979,7 +64980,7 @@ zP8BG5TrwPww77cAAAAASUVORK5CYII=\
 </span><span class="w">
 </span><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 15.788 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 15.088 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-examples-plot-animation-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/c7020e8dcc7dddfc8e105f6b138ae935/plot_animation.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_animation.ipynb</span></code></a></p>
@@ -65005,12 +65006,12 @@ zP8BG5TrwPww77cAAAAASUVORK5CYII=\
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="plot_J_surface.html"
+       href="plot_joint_fit.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Current surfaces</p>
+        <p class="prev-next-title">Fitting currents and joint magnetic field + current fits</p>
       </div>
     </a>
     <a class="right-next"

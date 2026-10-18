@@ -1,0 +1,6 @@
+﻿pysecs.SECS.fit\_J
+==================
+
+.. currentmodule:: pysecs
+
+.. automethod:: SECS.fit_J

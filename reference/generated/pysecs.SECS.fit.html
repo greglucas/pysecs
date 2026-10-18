@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>pysecs.SECS.fit &#8212; pysecs 0.1.0.dev1+unknown.g35d6b71ed documentation</title>
+    <title>pysecs.SECS.fit &#8212; pysecs 0.1.0.dev1+unknown.g5bbfbb304 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=bb53b968"></script>
+    <script src="../../_static/documentation_options.js?v=559d9807"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
@@ -49,12 +49,12 @@
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="pysecs.SECS.fit_unit_currents" href="pysecs.SECS.fit_unit_currents.html" />
+    <link rel="next" title="pysecs.SECS.fit_J" href="pysecs.SECS.fit_J.html" />
     <link rel="prev" title="pysecs.SECS" href="pysecs.SECS.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.1.0.dev1+unknown.g35d6b71ed" />
+  <meta name="docsearch:version" content="0.1.0.dev1+unknown.g5bbfbb304" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -126,8 +126,8 @@
       
     
     
-    <img src="../../_static/pysecs.png" class="logo__image only-light" alt="pysecs 0.1.0.dev1+unknown.g35d6b71ed documentation - Home"/>
-    <img src="../../_static/pysecs.png" class="logo__image only-dark pst-js-only" alt="pysecs 0.1.0.dev1+unknown.g35d6b71ed documentation - Home"/>
+    <img src="../../_static/pysecs.png" class="logo__image only-light" alt="pysecs 0.1.0.dev1+unknown.g5bbfbb304 documentation - Home"/>
+    <img src="../../_static/pysecs.png" class="logo__image only-dark pst-js-only" alt="pysecs 0.1.0.dev1+unknown.g5bbfbb304 documentation - Home"/>
   
   
 </a></div>
@@ -367,6 +367,7 @@
 </ul>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">pysecs.SECS.fit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pysecs.SECS.fit_J.html">pysecs.SECS.fit_J</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pysecs.SECS.fit_unit_currents.html">pysecs.SECS.fit_unit_currents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pysecs.SECS.from_observations.html">pysecs.SECS.from_observations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pysecs.SECS.predict.html">pysecs.SECS.predict</a></li>
@@ -458,12 +459,18 @@
 <h1>pysecs.SECS.fit<a class="headerlink" href="#pysecs-secs-fit" title="Link to this heading">#</a></h1>
 <dl class="py method">
 <dt class="sig sig-object py" id="pysecs.SECS.fit">
-<span class="sig-prename descclassname"><span class="pre">SECS.</span></span><span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_loc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_B</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_std</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'relative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">robust</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">robust_maxiter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">robust_tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-06</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pysecs.SECS.html#pysecs.SECS" title="pysecs.secs.SECS"><span class="pre">SECS</span></a></span></span><a class="headerlink" href="#pysecs.SECS.fit" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">SECS.</span></span><span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_loc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_B</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_std</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'relative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">robust</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">robust_maxiter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">robust_tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">J_loc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_J</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">J_std</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pysecs.SECS.html#pysecs.SECS" title="pysecs.secs.SECS"><span class="pre">SECS</span></a></span></span><a class="headerlink" href="#pysecs.SECS.fit" title="Link to this definition">#</a></dt>
 <dd><p>Fits the SECS to the given observations.</p>
 <p>Given a number of observation locations and measurements,
 this function fits the SEC system to them. It uses singular
 value decomposition (SVD) to fit the SEC amplitudes with the
 <cite>epsilon</cite> parameter used to regularize the solution.</p>
+<p>Sheet current density observations can be fit jointly with the
+magnetic field by also passing <code class="docutils literal notranslate"><span class="pre">J_loc</span></code>, <code class="docutils literal notranslate"><span class="pre">obs_J</span></code> and
+<code class="docutils literal notranslate"><span class="pre">J_std</span></code>. This is useful because ground magnetometers only see
+the divergence-free (equivalent) currents, while current
+observations also constrain the curl-free currents and their
+field-aligned currents (see <a class="reference internal" href="pysecs.SECS.fit_J.html#pysecs.SECS.fit_J" title="pysecs.SECS.fit_J"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit_J()</span></code></a>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -508,7 +515,22 @@ series cost roughly <code class="docutils literal notranslate"><span class="pre"
 Default: 20</p></li>
 <li><p><strong>robust_tol</strong> (<em>float</em>) – Relative amplitude change used to declare IRLS convergence.
 Default: 1e-6</p></li>
+<li><p><strong>J_loc</strong> (<em>ndarray</em><em> (</em><em>nJ</em><em>, </em><em>3</em><em> [</em><em>lat</em><em>, </em><em>lon</em><em>, </em><em>r</em><em>]</em><em>)</em><em>, </em><em>optional</em>) – Locations of current density observations to fit jointly with
+the magnetic field. Must be given together with <code class="docutils literal notranslate"><span class="pre">obs_J</span></code>.</p></li>
+<li><p><strong>obs_J</strong> (<em>ndarray</em><em> (</em><em>ntimes</em><em>, </em><em>nJ</em><em>, </em><em>2</em><em> [</em><em>Jx</em><em>, </em><em>Jy</em><em>] or </em><em>3</em><em> [</em><em>Jx</em><em>, </em><em>Jy</em><em>, </em><em>Jz</em><em>]</em><em>)</em><em>, </em><em>optional</em>) – Horizontal sheet current densities (A/m) observed at <code class="docutils literal notranslate"><span class="pre">J_loc</span></code>,
+as described in <a class="reference internal" href="pysecs.SECS.fit_J.html#pysecs.SECS.fit_J" title="pysecs.SECS.fit_J"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit_J()</span></code></a>.</p></li>
+<li><p><strong>J_std</strong> (ndarray, same shape as <code class="docutils literal notranslate"><span class="pre">obs_J</span></code>, optional) – Standard error (1-sigma) of <code class="docutils literal notranslate"><span class="pre">obs_J</span></code>. Magnetic fields and
+currents have different units, so a joint fit requires both
+<code class="docutils literal notranslate"><span class="pre">obs_std</span></code> and <code class="docutils literal notranslate"><span class="pre">J_std</span></code> to weight them against each other.
+Both must be in SI units (T and A/m), the units of the transfer
+functions.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>This system, with the fitted amplitudes stored in <code class="docutils literal notranslate"><span class="pre">sec_amps</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pysecs.SECS.html#pysecs.SECS" title="pysecs.SECS">SECS</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -535,11 +557,11 @@ Default: 1e-6</p></li>
       </div>
     </a>
     <a class="right-next"
-       href="pysecs.SECS.fit_unit_currents.html"
+       href="pysecs.SECS.fit_J.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">pysecs.SECS.fit_unit_currents</p>
+        <p class="prev-next-title">pysecs.SECS.fit_J</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
