@@ -1070,3 +1070,25 @@ def test_fit_joint_bad_arguments():
             obs_J=obs_J,
             J_std=J_std,
         )
+
+
+def test_transfer_cache():
+    """Cached transfer matrices follow in-place location changes and kind."""
+    truth, ground_locs, J_locs = _current_test_system()
+    obs_B = truth.predict_B(ground_locs)
+    secs = pysecs.SECS(sec_df_loc=truth.sec_df_loc)
+
+    # Reusing one buffer with new locations must not reuse the old matrix
+    locs = ground_locs.copy()
+    secs.fit(locs, obs_B)
+    locs[:, 0] += 1.0
+    secs.fit(locs, obs_B)
+    fresh = pysecs.SECS(sec_df_loc=truth.sec_df_loc).fit(locs, obs_B)
+    assert_allclose(secs.sec_amps, fresh.sec_amps)
+
+    # B and J fits at the same locations use their own transfer matrices
+    obs_J = truth.predict_J(J_locs)
+    secs.fit(J_locs, truth.predict_B(J_locs))
+    secs.fit_J(J_locs, obs_J)
+    fresh = pysecs.SECS(sec_df_loc=truth.sec_df_loc).fit_J(J_locs, obs_J)
+    assert_allclose(secs.sec_amps, fresh.sec_amps)

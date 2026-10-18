@@ -75,7 +75,9 @@ class SECS:
 
         # Keep some values around for cache lookups. Empty arrays are
         # the "not computed yet" sentinels: they never compare equal to
-        # real location arrays, so the first use fills the cache.
+        # real location arrays, so the first use fills the cache. Copies
+        # of the locations are stored so that later in-place changes to
+        # the caller's array are detected.
         self._obs_loc = np.empty((0, 3))
         self._T_obs_flat = np.empty((0, self.nsec))
         self._obs_loc_J = np.empty((0, 3))
@@ -484,7 +486,7 @@ class SECS:
         if not J:
             if not np.array_equal(obs_loc, self._obs_loc):
                 self._T_obs_flat = self._calc_T(obs_loc).reshape(-1, self.nsec)
-                self._obs_loc = obs_loc
+                self._obs_loc = obs_loc.copy()
             return self._T_obs_flat
 
         if not np.array_equal(obs_loc, self._obs_loc_J):
@@ -493,7 +495,7 @@ class SECS:
             # over any small cap around the pole is zero
             T[~np.isfinite(T)] = 0.0
             self._T_obs_J_flat = T.reshape(-1, self.nsec)
-            self._obs_loc_J = obs_loc
+            self._obs_loc_J = obs_loc.copy()
         return self._T_obs_J_flat
 
     def _warn_unconstrained_cf(self, obs_loc: np.ndarray) -> None:
@@ -689,13 +691,13 @@ class SECS:
             # Predicting currents
             if not np.array_equal(pred_loc, self._pred_loc_J):
                 self._T_pred_J = self._calc_J(pred_loc)
-                self._pred_loc_J = pred_loc
+                self._pred_loc_J = pred_loc.copy()
             T_pred = self._T_pred_J
         else:
             # Predicting magnetic fields
             if not np.array_equal(pred_loc, self._pred_loc_B):
                 self._T_pred_B = self._calc_T(pred_loc)
-                self._pred_loc_B = pred_loc
+                self._pred_loc_B = pred_loc.copy()
             T_pred = self._T_pred_B
 
         pred = np.squeeze(np.tensordot(self.sec_amps, T_pred, (1, 2)))
