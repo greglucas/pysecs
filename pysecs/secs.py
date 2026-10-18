@@ -331,48 +331,8 @@ class SECS:
         SECS
             This system, with the fitted amplitudes stored in ``sec_amps``.
         """
-        _check_loc(obs_loc, "Observation")
-        if (J_loc is None) != (obs_J is None):
-            raise ValueError("J_loc and obs_J must be given together")
-
-        if J_loc is None or obs_J is None:
-            self._warn_unconstrained_cf(obs_loc)
-            B_flat, B_std_flat = _flatten_obs(obs_B, obs_std, ncomp=3, name="obs_B")
-            return self._fit(
-                self._calc_T_obs(obs_loc),
-                B_flat,
-                B_std_flat,
-                epsilon,
-                mode,
-                robust,
-                robust_maxiter,
-                robust_tol,
-            )
-
-        if obs_std is None or J_std is None:
-            raise ValueError(
-                "A joint fit of magnetic fields and currents requires both "
-                "obs_std and J_std to weight the different units against "
-                "each other"
-            )
-        _check_loc(J_loc, "Current observation")
-        self._warn_off_shell(J_loc)
-        B_flat, B_std_flat = _flatten_obs(obs_B, obs_std, ncomp=3, name="obs_B")
-        J_flat, J_std_flat = _flatten_obs(obs_J, J_std, ncomp=2, name="obs_J")
-        if len(B_flat) != len(J_flat):
-            raise ValueError("obs_B and obs_J must have the same number of time steps")
-
-        # Stack the magnetic field and current equations into one system
-        return self._fit(
-            np.vstack([self._calc_T_obs(obs_loc), self._calc_T_obs(J_loc, J=True)]),
-            np.hstack([B_flat, J_flat]),
-            np.hstack([B_std_flat, J_std_flat]),
-            epsilon,
-            mode,
-            robust,
-            robust_maxiter,
-            robust_tol,
-        )
+        stacked = self._stack_obs(obs_loc, obs_B, obs_std, J_loc, obs_J, J_std)
+        return self._fit(*stacked, epsilon, mode, robust, robust_maxiter, robust_tol)
 
     def fit_J(
         self,
@@ -429,19 +389,8 @@ class SECS:
         1e-9 radians) therefore receive no contribution from that SEC, so
         currents can be fit at the SEC grid points themselves.
         """
-        _check_loc(obs_loc, "Observation")
-        self._warn_off_shell(obs_loc)
-        J_flat, J_std_flat = _flatten_obs(obs_J, obs_std, ncomp=2, name="obs_J")
-        return self._fit(
-            self._calc_T_obs(obs_loc, J=True),
-            J_flat,
-            J_std_flat,
-            epsilon,
-            mode,
-            robust,
-            robust_maxiter,
-            robust_tol,
-        )
+        stacked = self._stack_obs(None, None, None, obs_loc, obs_J, obs_std)
+        return self._fit(*stacked, epsilon, mode, robust, robust_maxiter, robust_tol)
 
     def _fit(
         self,
@@ -450,9 +399,9 @@ class SECS:
         std_flat: np.ndarray,
         epsilon: float,
         mode: str,
-        robust: str | None,
-        robust_maxiter: int,
-        robust_tol: float,
+        robust: str | None = None,
+        robust_maxiter: int = 20,
+        robust_tol: float = 1e-6,
     ) -> "SECS":
         """Fit the amplitudes to flattened observations and transfer matrix."""
         if robust not in (None, "huber", "bisquare"):
@@ -474,6 +423,49 @@ class SECS:
                 robust_tol,
             )
         return self
+
+    def _stack_obs(
+        self,
+        B_loc: np.ndarray | None,
+        obs_B: np.ndarray | None,
+        B_std: np.ndarray | None,
+        J_loc: np.ndarray | None,
+        obs_J: np.ndarray | None,
+        J_std: np.ndarray | None,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Validate and stack magnetic field and/or current observations.
+
+        Returns the flattened transfer matrix, observations and standard
+        errors, with the magnetic field rows before the current rows.
+        """
+        if (J_loc is None) != (obs_J is None):
+            raise ValueError("J_loc and obs_J must be given together")
+        joint = obs_B is not None and obs_J is not None
+        if joint and (B_std is None or J_std is None):
+            raise ValueError(
+                "A joint fit of magnetic fields and currents requires both "
+                "obs_std and J_std to weight the different units against "
+                "each other"
+            )
+
+        parts = []
+        if B_loc is not None and obs_B is not None:
+            _check_loc(B_loc, "Observation")
+            if not joint:
+                self._warn_unconstrained_cf(B_loc)
+            B_flat, B_std_flat = _flatten_obs(obs_B, B_std, ncomp=3, name="obs_B")
+            parts.append((self._calc_T_obs(B_loc), B_flat, B_std_flat))
+        if J_loc is not None and obs_J is not None:
+            _check_loc(J_loc, "Current observation")
+            self._warn_off_shell(J_loc)
+            J_flat, J_std_flat = _flatten_obs(obs_J, J_std, ncomp=2, name="obs_J")
+            parts.append((self._calc_T_obs(J_loc, J=True), J_flat, J_std_flat))
+
+        T_parts, obs_parts, std_parts = zip(*parts, strict=True)
+        if len({len(obs) for obs in obs_parts}) > 1:
+            raise ValueError("obs_B and obs_J must have the same number of time steps")
+        # Stack the magnetic field and current equations into one system
+        return np.vstack(T_parts), np.hstack(obs_parts), np.hstack(std_parts)
 
     def _calc_T_obs(self, obs_loc: np.ndarray, J: bool = False) -> np.ndarray:
         """Flattened transfer matrix to the fitted observation components.
@@ -511,7 +503,7 @@ class SECS:
                 "Add observations above the current shell (e.g. satellite "
                 "data) or current observations (joint fit) to fit "
                 "curl-free systems.",
-                stacklevel=3,
+                stacklevel=4,
             )
 
     def _warn_off_shell(self, obs_loc: np.ndarray) -> None:
@@ -523,7 +515,7 @@ class SECS:
                 "SEC currents only flow on their shell, so these observations "
                 "do not constrain the fit. Set the observation radius equal "
                 "to the SEC shell radius.",
-                stacklevel=3,
+                stacklevel=4,
             )
 
     def _solve_amplitudes(
