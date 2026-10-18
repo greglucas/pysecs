@@ -1123,3 +1123,98 @@ def test_transfer_cache():
     secs.fit_J(J_locs, obs_J)
     fresh = pysecs.SECS(sec_df_loc=truth.sec_df_loc).fit_J(J_locs, obs_J)
     assert_allclose(secs.sec_amps, fresh.sec_amps)
+
+
+def test_fac_density_matches_current_continuity():
+    """FAC into a cell equals the horizontal J_cf flowing out of it."""
+    r = R_EARTH + 110e3
+    # Two curl-free SECs on one shell: the second contributes only its
+    # uniform return current to the cell around the first
+    secs = pysecs.SECS(sec_cf_loc=[[10.0, 0.0, r], [-20.0, 40.0, r]])
+    secs.sec_amps = np.array([[1e4, -3e4]])
+
+    # Lat/lon cell around the first pole and its exact area
+    lat1, lat2, lon1, lon2 = 9.0, 11.0, -1.0, 1.0
+    area = r**2 * np.deg2rad(lon2 - lon1) * np.diff(np.sin(np.deg2rad([lat1, lat2])))
+    fac = secs.fac_density(np.array([area[0], 1.0]))
+
+    # Outward horizontal current through the cell boundary (midpoint rule)
+    n = 2000
+    lats = lat1 + (np.arange(n) + 0.5) * (lat2 - lat1) / n
+    lons = lon1 + (np.arange(n) + 0.5) * (lon2 - lon1) / n
+    dlat = np.deg2rad(lat2 - lat1) / n * r
+    dlon = np.deg2rad(lon2 - lon1) / n * r
+    outflow = 0.0
+    for lat, sign in [(lat2, 1), (lat1, -1)]:
+        loc = np.column_stack([np.full(n, lat), lons, np.full(n, r)])
+        J = secs.predict_J(loc)
+        outflow += sign * np.sum(J[:, 0]) * dlon * np.cos(np.deg2rad(lat))
+    for lon, sign in [(lon2, 1), (lon1, -1)]:
+        loc = np.column_stack([lats, np.full(n, lon), np.full(n, r)])
+        J = secs.predict_J(loc)
+        outflow += sign * np.sum(J[:, 1]) * dlat
+
+    assert_allclose(outflow, fac[0] * area[0], rtol=1e-4)
+
+
+def test_fac_density_global_closure():
+    """FACs integrated over cells covering the whole shell sum to zero."""
+    r = R_EARTH + 110e3
+    dlat, dlon = 10.0, 20.0
+    lat, lon = np.meshgrid(
+        np.arange(-85, 90, dlat), np.arange(-170, 180, dlon), indexing="ij"
+    )
+    grid = np.column_stack([lat.ravel(), lon.ravel(), np.full(lat.size, r)])
+    lat_rad = np.deg2rad(grid[:, 0])
+    area = (
+        r**2
+        * np.deg2rad(dlon)
+        * (
+            np.sin(lat_rad + np.deg2rad(dlat / 2))
+            - np.sin(lat_rad - np.deg2rad(dlat / 2))
+        )
+    )
+    assert_allclose(area.sum(), 4 * np.pi * r**2)
+
+    secs = pysecs.SECS(sec_cf_loc=grid)
+    secs.sec_amps = np.random.default_rng(3).normal(0, 1e4, (1, len(grid)))
+    assert_allclose(np.sum(secs.fac_density(area) * area), 0.0, atol=1e-6)
+
+
+def test_fac_density_shells_and_variance():
+    """Return currents stay on their own shell; variances propagate."""
+    truth, _, J_locs = _current_test_system()
+    grid = truth.sec_cf_loc
+    image = grid.copy()
+    image[:, 2] = R_EARTH - 500e3
+    secs = pysecs.SECS(sec_df_loc=grid, sec_cf_loc=np.vstack([grid, image]))
+    obs_J = truth.predict_J(J_locs)[:, :2]
+    secs.fit_J(J_locs, obs_J, obs_std=np.full_like(obs_J, 1e-3), epsilon=1e-8)
+
+    area = 1e10
+    fac, var = secs.fac_density(area, return_var=True)
+    ncf = len(grid)
+    assert fac.shape == var.shape == (2 * ncf,)
+    # Only the fitted shell carries currents; nothing returns on the image
+    amps = secs.sec_amps[0, len(grid) :]
+    expected = amps[:ncf] / area - amps[:ncf].sum() / (4 * np.pi * grid[0, 2] ** 2)
+    assert_allclose(fac[:ncf], expected)
+    assert_allclose(fac[ncf:], 0.0, atol=1e-20)
+    # Variance of the dominant term: amplitude variance / area**2
+    assert_allclose(
+        var[:ncf],
+        secs.sec_amps_var[0, len(grid) : ncf + len(grid)] / area**2,
+        rtol=1e-3,
+    )
+
+
+def test_fac_density_errors():
+    """FAC densities need curl-free SECs and fitted amplitudes."""
+    sec_loc = [[0.0, 0.0, R_EARTH + 110e3]]
+    with pytest.raises(ValueError, match="require curl-free SECs"):
+        pysecs.SECS(sec_df_loc=sec_loc).fac_density(1.0)
+    with pytest.raises(ValueError, match=r"call \.fit"):
+        pysecs.SECS(sec_cf_loc=sec_loc).fac_density(1.0)
+    secs = pysecs.SECS(sec_cf_loc=sec_loc).fit_unit_currents()
+    with pytest.raises(ValueError, match="Prediction variances require"):
+        secs.fac_density(1.0, return_var=True)

@@ -20,8 +20,8 @@ poles:
 - a joint fit to both with ``fit(..., J_loc=, obs_J=, J_std=)``, which
   combines the wide ground coverage with the FAC information.
 
-The FAC density is the curl-free amplitude of each SEC divided by the
-area of its grid cell.
+The FAC density at each curl-free SEC is computed from its amplitude and
+the area of its grid cell with :meth:`pysecs.SECS.fac_density`.
 """
 
 import matplotlib.pyplot as plt
@@ -41,11 +41,10 @@ def regular_grid(lats, lons, r):
     return np.column_stack([lat.ravel(), lon.ravel(), np.full(lat.size, r)])
 
 
-def fac_density(secs, dlat, dlon):
-    """Downward FAC density (A/m^2) from the curl-free amplitudes."""
-    lat = np.deg2rad(secs.sec_cf_loc[:, 0])
-    area = R_I**2 * np.deg2rad(dlat) * np.deg2rad(dlon) * np.cos(lat)
-    return secs.sec_amps[0, len(secs.sec_df_loc) :] / area
+def cell_area(grid, dlat, dlon):
+    """Area (m^2) of the regular lat/lon grid cell around each node."""
+    lat = np.deg2rad(grid[:, 0])
+    return R_I**2 * np.deg2rad(dlat) * np.deg2rad(dlon) * np.cos(lat)
 
 
 # %%
@@ -114,11 +113,12 @@ joint.fit(mag_loc, B_obs, B_std, epsilon=0.05, J_loc=J_loc, obs_J=J_obs, J_std=J
 # SEC's current is singular, and the FAC density is shown on the grid.
 plot_loc = regular_grid(np.arange(59, 77, 2.0), np.arange(-28, 38, 4.0), R_I)
 
+area = cell_area(grid, dlat, dlon)
 panels = [
-    ("Truth", truth, fac_density(truth, true_dlat, true_dlon)),
+    ("Truth", truth, truth.fac_density(cell_area(true_grid, true_dlat, true_dlon))),
     ("Ground magnetometers only", ground, None),
-    ("Currents only (fit_J)", currents, fac_density(currents, dlat, dlon)),
-    ("Joint fit", joint, fac_density(joint, dlat, dlon)),
+    ("Currents only (fit_J)", currents, currents.fac_density(area)),
+    ("Joint fit", joint, joint.fac_density(area)),
 ]
 
 fig, axes = plt.subplots(2, 2, figsize=(10, 7), sharex=True, sharey=True)

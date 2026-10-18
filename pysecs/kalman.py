@@ -339,16 +339,16 @@ class KalmanSECS:
             return pred
 
         T_pred = self.secs._T_pred_J if J else self.secs._T_pred_B
-        T_flat = T_pred.reshape(-1, self.secs.nsec)
-        ntimes = len(self.sec_amps)
-        npred = len(pred_loc)
-        var = np.empty((ntimes, npred, 3))
-        for t in range(ntimes):
+        var = self._prediction_var(T_pred.reshape(-1, self.secs.nsec))
+        return pred, np.squeeze(var.reshape(-1, *T_pred.shape[:2]))
+
+    def _prediction_var(self, T_flat: np.ndarray) -> np.ndarray:
+        """Variances (ntimes, nrows) of the linear predictions T_flat @ amps."""
+        var = np.empty((len(self.sec_amps), len(T_flat)))
+        for t, P in enumerate(self.sec_amps_cov):
             # diag(T P T^T) without forming the full product
-            var[t] = np.sum((T_flat @ self.sec_amps_cov[t]) * T_flat, axis=1).reshape(
-                npred, 3
-            )
-        return pred, np.squeeze(var)
+            var[t] = np.sum((T_flat @ P) * T_flat, axis=1)
+        return var
 
     def predict_B(
         self, pred_loc: np.ndarray, return_var: bool = False
@@ -361,3 +361,15 @@ class KalmanSECS:
     ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """Predict currents; see :meth:`predict`."""
         return self.predict(pred_loc, J=True, return_var=return_var)
+
+    def fac_density(
+        self, cell_area: float | np.ndarray, return_var: bool = False
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
+        """Field-aligned current densities; see :meth:`SECS.fac_density`."""
+        D = self.secs._fac_operator(cell_area)
+        if len(self.sec_amps_cov) == 0:
+            raise ValueError("Call fit() before calculating FAC densities.")
+        fac = np.squeeze(self.sec_amps @ D.T)
+        if not return_var:
+            return fac
+        return fac, np.squeeze(self._prediction_var(D))

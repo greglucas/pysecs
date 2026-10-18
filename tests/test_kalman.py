@@ -217,3 +217,21 @@ def test_missing_data_nan_ignored(system):
     kal.fit(system["obs_locs"], obs_B, system["times"], system["obs_std"])
     assert np.all(np.isfinite(kal.sec_amps))
     assert np.all(np.isfinite(kal.sec_amps_var))
+
+
+def test_fac_density(system):
+    """FAC densities propagate the full amplitude covariance."""
+    sec_locs = system["sec_locs"]
+    kf = pysecs.KalmanSECS(
+        pysecs.SECS(sec_df_loc=sec_locs, sec_cf_loc=sec_locs), tau=600.0, prior_std=1e4
+    )
+    with pytest.raises(ValueError, match="Call fit"):
+        kf.fac_density(1e10)
+    kf.fit(system["obs_locs"], system["obs_B"], system["times"], system["obs_std"])
+
+    area = np.full(len(sec_locs), 1e10)
+    fac, var = kf.fac_density(area, return_var=True)
+    D = kf.secs._fac_operator(area)
+    assert_allclose(fac, kf.sec_amps @ D.T)
+    expected_var = np.einsum("ij,tjk,ik->ti", D, kf.sec_amps_cov, D)
+    assert_allclose(var, expected_var)
